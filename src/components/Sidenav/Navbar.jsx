@@ -1,5 +1,6 @@
 import { Menu, LogOut } from "lucide-react"; // lucide-react icons
-import { Link } from "react-router-dom";
+
+const SITE_NAME = import.meta.env.SITE_NAME;
 
 export default function Navbar({ toggleSidebar, onLogout }) {
     return (
@@ -16,7 +17,7 @@ export default function Navbar({ toggleSidebar, onLogout }) {
 
                 {/* Center: Logo */}
                 <h1 className="flex-grow text-center text-lg font-bold text-slate-900 drop-shadow-md">
-                    PsiFirm
+                    ${SITE_NAME}
                 </h1>
 
                 {/* Right: Logout */}
