@@ -1,24 +1,19 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import ProtectedRoute from "./auth/ProtectedRoute";
+import { BrowserRouter as Router } from "react-router-dom"
+import {LayoutProvider} from "./contexts/layout/LayoutContext.jsx";
+import {AuthProvider} from "./contexts/auth/AuthContext.jsx";
+import {ErrorSnackbarProvider} from "./contexts/error/ErrorSnackbarProvider.jsx";
+import Navigation from "./routes/Navigation.jsx";
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+      <Router>
+          <LayoutProvider>
+              <AuthProvider>
+                    <ErrorSnackbarProvider>
+                        <Navigation />
+                    </ErrorSnackbarProvider>
+              </AuthProvider>
+          </LayoutProvider>
+      </Router>
   );
 }

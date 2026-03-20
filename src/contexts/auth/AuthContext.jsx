@@ -1,13 +1,19 @@
 import { createContext, useContext, useMemo, useState } from "react";
-import { authApi } from "../api/auth";
+import { authApi } from "../../api/auth.js";
+import {useLocation, useNavigate} from "react-router-dom";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [user, setUser] = useState(null);
+  const [rol, setRol] = useState(null);
+  const [permisos, setPermisos] = useState([]);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [loading, setLoading] = useState(true);
 
-  async function login(payload) {
+    async function login(payload) {
     const data = await authApi.login(payload);
     const t = data.accessToken || data.token;
     if (!t) throw new Error("El backend no devolvió token (accessToken/token)");

@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {useEffect, useState} from "react";
+import {Link, useLocation, useNavigate} from "react-router-dom";
+import Button from "../../components/ui/Button.jsx";
+import {setLayout, useLayoutController} from "../../contexts/layout/LayoutContext.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -7,6 +9,13 @@ export default function Login() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [, dispatch] = useLayoutController();
+
+  const { pathname } = useLocation();
+
+    useEffect(() => {
+        setLayout(dispatch, "page");
+    }, [pathname]);
 
   async function onSubmit(e) {
     e.preventDefault();

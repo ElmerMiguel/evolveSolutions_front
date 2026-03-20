@@ -1,12 +1,23 @@
 import { useNavigate } from "react-router-dom";
+import {useEffect} from "react";
+import {useAuth} from "../contexts/auth/AuthContext.jsx";
+import {setLayout, useLayoutController} from "../contexts/layout/LayoutContext.jsx";
 
 export default function Dashboard() {
-  const nav = useNavigate();
-  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+  const { token } = useAuth();
+  const [, dispatch] = useLayoutController();
+
+    useEffect(() => {
+        if (!token) {
+            navigate("/landing");
+        }
+        setLayout(dispatch, "dashboard");
+    }, []);
 
   function logout() {
     localStorage.removeItem("token");
-    nav("/login");
+    navigate("/login");
   }
 
   return (
