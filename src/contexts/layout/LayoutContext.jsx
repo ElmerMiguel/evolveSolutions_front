@@ -26,7 +26,7 @@ function LayoutProvider({ children }) {
         fixedNavbar: true,
         openConfigurator: false,
         direction: "ltr",
-        layout: "page",
+        layout: localStorage.getItem("token") ? "dashboard" : "page",
     };
 
     const [controller, dispatch] = useReducer(reducer, initialState);

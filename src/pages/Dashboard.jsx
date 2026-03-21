@@ -30,12 +30,6 @@ export default function Dashboard() {
               <p className="text-sm text-slate-600">Sesión iniciada correctamente</p>
             </div>
 
-            <button
-              onClick={logout}
-              className="rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-600/20 hover:bg-brand-700"
-            >
-              Cerrar sesión
-            </button>
           </div>
 
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">

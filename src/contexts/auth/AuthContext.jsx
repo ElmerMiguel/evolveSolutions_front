@@ -1,17 +1,15 @@
 import { createContext, useContext, useMemo, useState } from "react";
 import { authApi } from "../../api/auth.js";
-import {useLocation, useNavigate} from "react-router-dom";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [user, setUser] = useState(null);
-  const [rol, setRol] = useState(null);
-  const [permisos, setPermisos] = useState([]);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [loading, setLoading] = useState(true);
+  const [rol, setRol] = useState(localStorage.getItem("rol") || "");
+  // const [permisos, setPermisos] = useState(localStorage.getItem("permisos") || []);
+  const [permisos, setPermisos] = useState([{ PermisoID: "cursos", NivelEscritura: 3 }]);
+
 
     async function login(payload) {
     const data = await authApi.login(payload);
@@ -19,7 +17,11 @@ export function AuthProvider({ children }) {
     if (!t) throw new Error("El backend no devolvió token (accessToken/token)");
 
     setToken(t);
+    setRol(t?.rol);
+    setPermisos(t?.permisos || []);
     localStorage.setItem("token", t);
+    localStorage.setItem("permisos", JSON.parse(t?.permisos || []));
+    localStorage.setItem("rol", t?.rol);
     setUser(data.user || null);
     return data;
   }
@@ -35,10 +37,12 @@ export function AuthProvider({ children }) {
     setToken("");
     setUser(null);
     localStorage.removeItem("token");
+    localStorage.removeItem("permisos");
+    localStorage.removeItem("rol");
   }
 
   const value = useMemo(
-    () => ({ token, user, setUser, login, register, logout }),
+    () => ({ token, user, setUser, login, register, logout, rol, permisos }),
     [token, user]
   );
 
