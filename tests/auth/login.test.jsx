@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import Login from "../../src/pages/auth/Login.jsx";
 import { MemoryRouter } from "react-router-dom";
+import { LayoutProvider } from "../../src/contexts/layout/LayoutContext.jsx";
 
 const mockNavigate = vi.fn();
 
@@ -27,9 +28,11 @@ describe("Login page", () => {
         );
 
         render(
-            <MemoryRouter>
-                <Login />
-            </MemoryRouter>
+            <LayoutProvider>
+                <MemoryRouter>
+                    <Login />
+                </MemoryRouter>
+            </LayoutProvider>
         );
 
         fireEvent.change(screen.getByPlaceholderText("correo@dominio.com"), {
