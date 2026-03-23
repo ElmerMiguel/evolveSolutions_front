@@ -1,12 +1,23 @@
 import { useNavigate } from "react-router-dom";
+import {useEffect} from "react";
+import {useAuth} from "../contexts/auth/AuthContext.jsx";
+import {setLayout, useLayoutController} from "../contexts/layout/LayoutContext.jsx";
 
 export default function Dashboard() {
-  const nav = useNavigate();
-  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+  const { token } = useAuth();
+  const [, dispatch] = useLayoutController();
+
+    useEffect(() => {
+        if (!token) {
+            navigate("/landing");
+        }
+        setLayout(dispatch, "dashboard");
+    }, []);
 
   function logout() {
     localStorage.removeItem("token");
-    nav("/login");
+    navigate("/login");
   }
 
   return (
@@ -19,12 +30,6 @@ export default function Dashboard() {
               <p className="text-sm text-slate-600">Sesión iniciada correctamente</p>
             </div>
 
-            <button
-              onClick={logout}
-              className="rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-600/20 hover:bg-brand-700"
-            >
-              Cerrar sesión
-            </button>
           </div>
 
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">

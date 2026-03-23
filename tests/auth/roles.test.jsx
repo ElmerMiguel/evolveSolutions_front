@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import ProtectedRoute from "../../src/auth/ProtectedRoute";
+import ProtectedRoute from "../../src/contexts/auth/ProtectedRoute";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 
 describe("ProtectedRoute", () => {
