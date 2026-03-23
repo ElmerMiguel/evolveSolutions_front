@@ -7,22 +7,36 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [user, setUser] = useState(null);
   const [rol, setRol] = useState(localStorage.getItem("rol") || "");
-  // const [permisos, setPermisos] = useState(localStorage.getItem("permisos") || []);
-  const [permisos, setPermisos] = useState([{ PermisoID: "cursos", NivelEscritura: 3 }]);
+  const permisosInStorage = () => {
+      try { return JSON.parse(localStorage.getItem("permisos") || "[]"); } 
+      catch { return []; }
+  };
+  const [permisos, setPermisos] = useState(permisosInStorage());
 
 
     async function login(payload) {
     const data = await authApi.login(payload);
-    const t = data.accessToken || data.token;
-    if (!t) throw new Error("El backend no devolvió token (accessToken/token)");
+    const t = data.token;
+    if (!t) throw new Error("El backend no devolvió token");
 
     setToken(t);
-    setRol(t?.rol);
-    setPermisos(t?.permisos || []);
+    // Asignar el rol (por defecto STUDENT o lo que venga en la sesión/usuario)
+    const userRole = data.session?.user?.role || "STUDENT";
+    setRol(userRole);
+    
+    // Obtener los permisos del backend (directamente del response)
+    const backendPermisos = data.permisos || [];
+    setPermisos(backendPermisos);
+    
     localStorage.setItem("token", t);
-    localStorage.setItem("permisos", JSON.parse(t?.permisos || []));
-    localStorage.setItem("rol", t?.rol);
-    setUser(data.user || null);
+    localStorage.setItem("permisos", JSON.stringify(backendPermisos));
+    localStorage.setItem("rol", userRole);
+    
+    if (data.session?.user) {
+        setUser(data.session.user);
+        localStorage.setItem("user", JSON.stringify(data.session.user));
+    }
+    
     return data;
   }
 

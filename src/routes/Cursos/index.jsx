@@ -10,10 +10,10 @@ const cursosRoutes = [
     {
         permiso: CURSOS,
         tipoAutorizacion: LECTURA,
-        name: "Gestión Cursos",
-        key: "cursos",
+        name: "Ver Cursos",
+        key: "ver-cursos",
         route: "/cursos",
-        to: "/cursos/*",
+        to: "/cursos",
         component: (
             <PrivateRoute
                 permisoNecesario={CURSOS}
@@ -22,6 +22,14 @@ const cursosRoutes = [
             />
         )
     },
+    {
+        permiso: CURSOS,
+        tipoAutorizacion: TIPOS_AUTORIZACIONES.ESCRITURA,
+        name: "Crear Curso",
+        key: "crear-curso",
+        route: "/cursos/crear",
+        to: "/cursos/crear",
+    }
 ]
 
 export default cursosRoutes;
