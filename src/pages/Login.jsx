@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { authApi } from "../api/auth";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -16,22 +15,10 @@ export default function Login() {
     const form = new FormData(e.currentTarget);
 
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          identifier: form.get("email"),
-          password: form.get("password"),
-        }),
+      const data = await authApi.login({
+        identifier: form.get("email"),
+        password: form.get("password"),
       });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data?.error || "No se pudo iniciar sesión");
-      }
 
       if (!data?.token) {
         throw new Error("El backend no devolvió token");
