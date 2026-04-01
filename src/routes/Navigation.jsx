@@ -51,14 +51,16 @@ const Navigation = () => {
 
     useEffect(() => {
         if (token && (pathname === '/login' || pathname === '/register' || pathname === '/landing')) {
-            navigate('/dashboard')
+            navigate('/dashboard', { replace: true });
+        } else if (!token && pathname !== '/login' && pathname !== '/register') {
+            navigate('/login', { replace: true });
         }
     }, [token, pathname, navigate])
 
     return (
         <div>
             {
-                layout === "dashboard" ?
+                (layout === "dashboard" && token) ?
                     <Sidebar
                         brandName={SITE_NAME}
                         onMouseEnter={handleOnMouseEnter}
@@ -68,18 +70,23 @@ const Navigation = () => {
                     <></>
             }
             <Routes>
-                <Route path={"/login"} element={<Login/>} />
-                <Route path={"/register"} element={<Register/>}/>
-                <Route path={"/dashboard"} element={<Dashboard/>} />
-                <Route path={"/"} element={<Dashboard/>} />
-                <Route path='/*' element={
-                    <Routes>
-                        {getRoutes(routes)}
-                        <Route path='/dashboard' element={<Dashboard />} />
-                        <Route path="*" element={<Navigate to="/dashboard" />} />
-                    </Routes>
-                } />
-
+                <Route path="/login" element={<Login/>} />
+                <Route path="/register" element={<Register/>}/>
+                
+                {token ? (
+                    <>
+                        <Route path="/dashboard" element={<Dashboard/>} />
+                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="/*" element={
+                            <Routes>
+                                {getRoutes(routes)}
+                                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                            </Routes>
+                        } />
+                    </>
+                ) : (
+                    <Route path="*" element={<Navigate to="/login" replace />} />
+                )}
             </Routes>
         </div>
     );

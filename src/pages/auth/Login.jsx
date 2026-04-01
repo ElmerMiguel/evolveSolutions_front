@@ -2,6 +2,7 @@ import {useEffect, useState} from "react";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import Button from "../../components/ui/Button.jsx";
 import {setLayout, useLayoutController} from "../../contexts/layout/LayoutContext.jsx";
+import {useAuth} from "../../contexts/auth/AuthContext.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -10,6 +11,8 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [, dispatch] = useLayoutController();
+
+  const { login } = useAuth();
 
   const { pathname } = useLocation();
 
@@ -25,32 +28,10 @@ export default function Login() {
     const form = new FormData(e.currentTarget);
 
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      await login({
           identifier: form.get("email"),
-          password: form.get("password"),
-        }),
+          password: form.get("password")
       });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data?.error || "No se pudo iniciar sesión");
-      }
-
-      if (!data?.token) {
-        throw new Error("El backend no devolvió token");
-      }
-
-      localStorage.setItem("token", data.token);
-
-      if (data.session) {
-        localStorage.setItem("session", JSON.stringify(data.session));
-      }
 
       navigate("/dashboard");
     } catch (err) {
