@@ -2,6 +2,7 @@ import React from 'react';
 import Login from "../pages/auth/Login.jsx";
 import {Book} from "lucide-react";
 import cursosRoutes from "./Cursos/index.jsx";
+import programasRoutes from './Programas/index.jsx';
 
 const UseHandleRoutes = () => {
     return [
@@ -25,6 +26,13 @@ const UseHandleRoutes = () => {
             key: "cursos",
             icon: <Book className="w-6 h-6 text-blue-500"/>,
             collapse: cursosRoutes
+        },
+        {
+            type: "collapse",
+            name: "Programas",
+            key: "programas",
+            icon: <svg className="w-6 h-6 text-amber-500"></svg>,
+            collapse: programasRoutes
         }
     ];
 };

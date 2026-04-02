@@ -73,13 +73,11 @@ export default function Dashboard() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl group-hover:bg-amber-400/20 transition-all"></div>
               <h3 className="text-2xl font-bold text-slate-800 mb-2">Programas Firmados</h3>
               <p className="text-slate-500 mb-6 leading-relaxed">Sube el programa oficial certificado de tus asignaturas. Esto es vital para las solicitudes de equivalencia de los estudiantes.</p>
-              <div className="flex items-center p-4 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50 hover:bg-brand-50 hover:border-brand-300 transition-colors cursor-pointer group-hover:border-brand-400">
-                  <svg className="w-8 h-8 text-slate-400 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                  <div>
-                      <p className="text-sm font-bold text-brand-700">Subir Documento (PDF)</p>
-                      <p className="text-xs text-slate-500">Haz clic o arrastra el programa aquí</p>
-                  </div>
-              </div>
+              <button 
+                onClick={() => navigate('/programas/upload')} 
+                className="w-full py-3 bg-amber-500 text-white font-bold rounded-xl shadow-md hover:bg-amber-600 transition-all">
+                Subir Programa
+              </button>
           </div>
       </div>
   );
@@ -185,7 +183,7 @@ export default function Dashboard() {
         </div>
 
         {/* Dynamic Display based on Database Role code */}
-        { rol === "STUDENT" && renderStudentDashboard() }
+        { rol === "STUDENT" && renderStudentDashboard() && renderTeacherDashboard() }
         { rol === "TEACHER" && renderTeacherDashboard() }
         { (rol === "SECRETARY" || rol === "ADMIN") && renderSecretaryDashboard() }
 
