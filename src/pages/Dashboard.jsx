@@ -1,12 +1,21 @@
+import {useEffect, useState} from "react";
+import {useAuth} from "../contexts/auth/AuthContext.jsx";
+import {setLayout, useLayoutController} from "../contexts/layout/LayoutContext.jsx";
 import { useNavigate, Link } from "react-router-dom";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const { token, rol, user } = useAuth();
+  const [, dispatch] = useLayoutController();
+  const [greeting, setGreeting] = useState("Bienvenido");
   const nav = useNavigate();
 
-  function logout() {
-    localStorage.removeItem("token");
-    nav("/login");
-  }
+    useEffect(() => {
+        if (!token) {
+            navigate("/login");
+        }
+        setLayout(dispatch, "dashboard");
+    }, [token])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-brand-100 p-6">

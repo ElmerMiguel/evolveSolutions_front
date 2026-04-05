@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {useEffect, useState} from "react";
+import {Link, useLocation, useNavigate} from "react-router-dom";
+import {setLayout, useLayoutController} from "../../contexts/layout/LayoutContext.jsx";
+import {useAuth} from "../../contexts/auth/AuthContext.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -7,6 +9,14 @@ export default function Register() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [, dispatch] = useLayoutController();
+
+  const { register } = useAuth();
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+      setLayout(dispatch, "page");
+  }, [pathname]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -16,26 +26,14 @@ export default function Register() {
     const form = new FormData(e.currentTarget);
 
     try {
-      const res = await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      await register({
           username: form.get("username"),
           email: form.get("email"),
           password: form.get("password"),
           firstName: form.get("firstName"),
           lastName: form.get("lastName"),
-          photoUrl: form.get("photoUrl"),
-        }),
+          photoUrl: form.get("photoUrl")
       });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data?.error || "No se pudo registrar el usuario");
-      }
 
       navigate("/login");
     } catch (err) {

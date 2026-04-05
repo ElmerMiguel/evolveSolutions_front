@@ -1,0 +1,6 @@
+export const TIPOS_AUTORIZACIONES = {
+    DENEGADO: 0,
+    LECTURA: 1,
+    ACTUALIZACION: 2,
+    ESCRITURA: 3,
+};

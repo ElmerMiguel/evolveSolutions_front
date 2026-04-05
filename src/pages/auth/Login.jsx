@@ -1,11 +1,24 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { authApi } from "../api/auth";
+import {useEffect, useState} from "react";
+import {Link, useLocation, useNavigate} from "react-router-dom";
+import Button from "../../components/ui/Button.jsx";
+import {setLayout, useLayoutController} from "../../contexts/layout/LayoutContext.jsx";
+import {useAuth} from "../../contexts/auth/AuthContext.jsx";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function Login() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [, dispatch] = useLayoutController();
+
+  const { login } = useAuth();
+
+  const { pathname } = useLocation();
+
+    useEffect(() => {
+        setLayout(dispatch, "page");
+    }, [pathname]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -15,20 +28,10 @@ export default function Login() {
     const form = new FormData(e.currentTarget);
 
     try {
-      const data = await authApi.login({
-        identifier: form.get("email"),
-        password: form.get("password"),
+      await login({
+          identifier: form.get("email"),
+          password: form.get("password")
       });
-
-      if (!data?.token) {
-        throw new Error("El backend no devolvió token");
-      }
-
-      localStorage.setItem("token", data.token);
-
-      if (data.session) {
-        localStorage.setItem("session", JSON.stringify(data.session));
-      }
 
       navigate("/dashboard");
     } catch (err) {
