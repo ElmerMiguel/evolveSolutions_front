@@ -10,8 +10,8 @@ const programsRoutes = [
         route: "programas/*",
         component: (
             <PrivateRoute
-                permisoNecesario={PERMISOS_PROGRAMAS.PROGRAMAS}
-                autorizacionNecesaria={TIPOS_AUTORIZACIONES.LECTURA}
+                // permisoNecesario={PERMISOS_PROGRAMAS.PROGRAMAS}
+                // autorizacionNecesaria={TIPOS_AUTORIZACIONES.LECTURA}
                 element={<GestionProgramasRoutes />}
             />
         )

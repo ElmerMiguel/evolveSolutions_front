@@ -5,8 +5,6 @@ const useValidarPermiso = () => {
     const { permisos } = useAuth();
 
     const validarPermiso = (PermisoID, TipoAutorizacion) => {
-        console.log("permisos del usuario:", permisos);
-        console.log("buscando:", { PermisoID, TipoAutorizacion });
 
         if (permisos) {
             const permiso = permisos.find(
@@ -14,7 +12,6 @@ const useValidarPermiso = () => {
                     item.PermisoID === PermisoID &&
                     item.NivelEscritura >= TipoAutorizacion
             );
-            console.log("permiso encontrado:", permiso);
 
             if (permiso) return true;
         }

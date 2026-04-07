@@ -183,7 +183,7 @@ export default function Dashboard() {
         </div>
 
         {/* Dynamic Display based on Database Role code */}
-        { rol === "STUDENT" && renderStudentDashboard() && renderTeacherDashboard() }
+        { rol === "STUDENT" && renderStudentDashboard()}
         { rol === "TEACHER" && renderTeacherDashboard() }
         { (rol === "SECRETARY" || rol === "ADMIN") && renderSecretaryDashboard() }
 

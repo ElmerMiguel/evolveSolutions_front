@@ -21,11 +21,20 @@ const UploadProgram = () => {
     formData.append("teacher_course_id", teacherCourseId);
 
     try {
+      const API_URL =
+        window.location.hostname === "localhost"
+          ? "http://localhost:3000"
+          : import.meta.env.VITE_API_URL;
+
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/programas/upload`, // ✅ variable de entorno
+        //`${import.meta.env.VITE_API_URL}/programas/upload`, // variable de entorno
+
+
+        `${API_URL}/programas/upload`,
+
         {
           method: "POST",
-          credentials: "include", // ✅ envía la cookie con el token
+          credentials: "include", // envía la cookie con el token
           body: formData,
         }
       );
@@ -87,8 +96,8 @@ const UploadProgram = () => {
               className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
             >
               <option value="">— Selecciona un curso —</option>
-              <option value="1">Matemática 1</option>
-              <option value="2">Programación</option>
+              <option value="1">Prácticas Intermedias</option>
+              <option value="2">Sistemas Operativos 1</option>
             </select>
           </div>
 
