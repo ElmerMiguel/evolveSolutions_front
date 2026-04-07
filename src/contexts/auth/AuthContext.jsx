@@ -21,7 +21,8 @@ export function AuthProvider({ children }) {
 
     setToken(t);
     // Asignar el rol (por defecto STUDENT o lo que venga en la sesión/usuario)
-    const userRole = data.session?.user?.role || "STUDENT";
+    console.log(data.role || "NO HAY ROL");
+    const userRole = data.role || "STUDENT";
     setRol(userRole);
     
     // Obtener los permisos del backend (directamente del response)
