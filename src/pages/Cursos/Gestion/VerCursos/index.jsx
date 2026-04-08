@@ -1,13 +1,13 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from "react";
 import useValidarPermiso from "../../../../hooks/useValidarPermiso.js";
-import {useErrorSnackbar} from "../../../../contexts/error/ErrorSnackbarProvider.jsx";
-import {http} from "../../../../api/http.js";
-import {PERMISOS_CURSOS} from "../../../../entities/permisos/cursos.js";
-import {TIPOS_AUTORIZACIONES} from "../../../../entities/enums/TiposAutorizacion.js";
-import {useNavigate} from "react-router-dom";
+import { useErrorSnackbar } from "../../../../contexts/error/ErrorSnackbarProvider.jsx";
+import { http } from "../../../../api/http.js";
+import { PERMISOS_CURSOS } from "../../../../entities/permisos/cursos.js";
+import { TIPOS_AUTORIZACIONES } from "../../../../entities/enums/TiposAutorizacion.js";
+import { useNavigate } from "react-router-dom";
 
 const { CURSOS } = PERMISOS_CURSOS;
-const { ESCRITURA} = TIPOS_AUTORIZACIONES;
+const { ESCRITURA } = TIPOS_AUTORIZACIONES;
 
 const VerCursos = () => {
     const { validarPermiso } = useValidarPermiso();
@@ -17,17 +17,21 @@ const VerCursos = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        void getCursos()
+        void getCursos();
     }, []);
+
+    useEffect(() => {
+        console.log(cursos);
+    }, [cursos]);
 
     const getCursos = async () => {
         setLoading(true);
         try {
-            const response = await http("/cursos", {method: "GET"})
+            const response = await http("/cursos", { method: "GET" });
             if (response.status === 200) {
                 setCursos(response.data);
             } else {
-                showError(response?.statusText)
+                showError(response?.statusText);
             }
         } catch (error) {
             console.error("Error al obtener los cursos: ", error);
@@ -35,7 +39,7 @@ const VerCursos = () => {
         } finally {
             setLoading(false);
         }
-    }
+    };
 
     return (
         <div className="p-6">
@@ -63,20 +67,32 @@ const VerCursos = () => {
                 <div className="overflow-x-auto">
                     <table className="min-w-full border-collapse border border-gray-300">
                         <thead className="bg-gray-100">
-                        <tr>
-                            <th className="border bg-brand-100 px-4 py-2 text-left">ID</th>
-                            <th className="border bg-brand-100 px-4 py-2 text-left">Nombre</th>
-                            <th className="border bg-brand-100 px-4 py-2 text-left">Descripción</th>
-                        </tr>
+                            <tr>
+                                <th className="border bg-brand-100 px-4 py-2 text-left">
+                                    ID
+                                </th>
+                                <th className="border bg-brand-100 px-4 py-2 text-left">
+                                    Nombre
+                                </th>
+                                <th className="border bg-brand-100 px-4 py-2 text-left">
+                                    Descripción
+                                </th>
+                            </tr>
                         </thead>
                         <tbody>
-                        {cursos.map((curso) => (
-                            <tr key={curso.id} className="hover:bg-gray-50">
-                                <td className="border bg-brand-50 px-4 py-2">{curso.id}</td>
-                                <td className="border bg-brand-50 px-4 py-2">{curso.nombre}</td>
-                                <td className="border bg-brand-50 px-4 py-2">{curso.descripcion}</td>
-                            </tr>
-                        ))}
+                            {cursos.map((curso) => (
+                                <tr key={curso.id} className="hover:bg-gray-50">
+                                    <td className="border bg-brand-50 px-4 py-2">
+                                        {curso.code}
+                                    </td>
+                                    <td className="border bg-brand-50 px-4 py-2">
+                                        {curso.name}
+                                    </td>
+                                    <td className="border bg-brand-50 px-4 py-2">
+                                        {curso.description}
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>

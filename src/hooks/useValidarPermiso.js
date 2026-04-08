@@ -1,22 +1,20 @@
-import {useAuth} from "../contexts/auth/AuthContext.jsx";
-
+import { useAuth } from "../contexts/auth/AuthContext.jsx";
 
 const useValidarPermiso = () => {
     const { permisos } = useAuth();
 
-    const validarPermiso = (PermisoID, TipoAutorizacion) => {
-        if (permisos) {
-            const permiso = permisos.find(
-                (item) =>
-                    item.PermisoID === PermisoID &&
-                    item.NivelEscritura >= TipoAutorizacion
-            );
+    const validarPermiso = (permiso, tipo) => {
+        if (!permisos) return false;
 
-            if (permiso) return true;
-        }
-        return false;
-    }
+        return permisos.some((item) => {
+            return (
+                item.PermisoID?.toUpperCase() === permiso?.toUpperCase() &&
+                item.NivelEscritura >= tipo
+            );
+        });
+    };
 
     return { validarPermiso };
-}
- export default useValidarPermiso;
+};
+
+export default useValidarPermiso;

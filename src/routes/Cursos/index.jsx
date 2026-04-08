@@ -1,10 +1,10 @@
-import {PERMISOS_CURSOS} from "../../entities/permisos/cursos.js";
-import {TIPOS_AUTORIZACIONES} from "../../entities/enums/TiposAutorizacion.js";
+import { PERMISOS_CURSOS } from "../../entities/permisos/cursos.js";
+import { TIPOS_AUTORIZACIONES } from "../../entities/enums/TiposAutorizacion.js";
 import GestionCursosRoutes from "./GestionCursosRoutes.jsx";
 import PrivateRoute from "../../components/PrivateRoute/index.jsx";
 
 const { CURSOS } = PERMISOS_CURSOS;
-const { LECTURA } = TIPOS_AUTORIZACIONES;
+const { LECTURA, ESCRITURA } = TIPOS_AUTORIZACIONES;
 
 const cursosRoutes = [
     {
@@ -12,7 +12,7 @@ const cursosRoutes = [
         tipoAutorizacion: LECTURA,
         name: "Ver Cursos",
         key: "ver-cursos",
-        route: "/cursos",
+        route: "/cursos/*",
         to: "/cursos",
         component: (
             <PrivateRoute
@@ -20,16 +20,15 @@ const cursosRoutes = [
                 autorizacionNecesaria={LECTURA}
                 element={<GestionCursosRoutes />}
             />
-        )
+        ),
     },
     {
         permiso: CURSOS,
-        tipoAutorizacion: TIPOS_AUTORIZACIONES.ESCRITURA,
+        tipoAutorizacion: ESCRITURA,
         name: "Crear Curso",
         key: "crear-curso",
-        route: "/cursos/crear",
         to: "/cursos/crear",
-    }
-]
+    },
+];
 
 export default cursosRoutes;
