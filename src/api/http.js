@@ -7,10 +7,20 @@ export async function http(path, { method = "GET", body, token } = {}) {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: "include",
         body: body ? JSON.stringify(body) : undefined,
     });
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.message || "Error en la solicitud");
-    return data;
+    let data;
+    try {
+        data = await res.json();
+    } catch {
+        data = {};
+    }
+
+    return {
+        status: res.status,
+        statusText: res.statusText,
+        data,
+    };
 }
