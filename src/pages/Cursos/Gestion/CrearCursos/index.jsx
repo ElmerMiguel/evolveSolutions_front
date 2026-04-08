@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from 'react';
-import {useNavigate} from "react-router-dom";
-import {http} from "../../../../api/http.js";
-import {useErrorSnackbar} from "../../../../contexts/error/ErrorSnackbarProvider.jsx";
-import {useAuth} from "../../../../contexts/auth/AuthContext.jsx";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { http } from "../../../../api/http.js";
+import { useErrorSnackbar } from "../../../../contexts/error/ErrorSnackbarProvider.jsx";
+import { useAuth } from "../../../../contexts/auth/AuthContext.jsx";
 
 const CrearCursos = () => {
     const navigate = useNavigate();
@@ -13,25 +13,30 @@ const CrearCursos = () => {
     const { token } = useAuth();
 
     useEffect(() => {
-        void getOptions()
+        void getOptions();
     }, []);
 
     const getOptions = async () => {
         setBusy(true);
         try {
-            const response = await http("/cursos/options", {method: "GET"})
+            const response = await http("/cursos/options", { method: "GET" });
             if (response.status === 200) {
+                console.log("OPTIONS RESPONSE:", response.data);
+
                 setOptions(response.data);
             } else {
-                showError(response?.statusText)
+                showError(response?.statusText);
             }
         } catch (error) {
-            console.error("Error al obtener los datos requeridos para crear un curso: ", error);
+            console.error(
+                "Error al obtener los datos requeridos para crear un curso: ",
+                error
+            );
             showError(error?.message ?? "Error desconocido");
         } finally {
             setBusy(false);
         }
-    }
+    };
 
     async function onSubmit(e) {
         e.preventDefault();
@@ -48,22 +53,31 @@ const CrearCursos = () => {
                 pensum: String(form.get("pensum") ?? ""),
                 creditos: parseInt(String(form.get("creditos")), 10),
                 horasTeoricas: parseInt(String(form.get("horasTeoricas")), 10),
-                horasPracticas: parseInt(String(form.get("horasPracticas")), 10),
+                horasPracticas: parseInt(
+                    String(form.get("horasPracticas")),
+                    10
+                ),
             };
 
-            if (!payload.nombre || !payload.codigo || !payload.descripcion || !payload.pensum) {
+            if (
+                !payload.nombre ||
+                !payload.codigo ||
+                !payload.descripcion ||
+                !payload.pensum
+            ) {
                 throw new Error("Completa todos los campos requeridos.");
             }
             for (const k of ["creditos", "horasTeoricas", "horasPracticas"]) {
                 if (!Number.isFinite(payload[k]) || payload[k] <= 0) {
-                    throw new Error("Los campos numéricos deben ser enteros mayores a 0.");
+                    throw new Error(
+                        "Los campos numéricos deben ser enteros mayores a 0."
+                    );
                 }
             }
 
             const res = await http("/cursos/crear", {
                 method: "POST",
                 body: payload,
-                token
             });
 
             if (res?.status !== 200 && res?.status !== 201) {
@@ -71,7 +85,7 @@ const CrearCursos = () => {
             }
 
             navigate("/cursos");
-        } catch (error){
+        } catch (error) {
             const msg = error?.message ?? "Error desconocido";
             setError(msg);
             showError(msg);
@@ -83,7 +97,9 @@ const CrearCursos = () => {
     return (
         <div className="p-6">
             <div className="flex items-center justify-between my-2 mx-4">
-                <h4 className="text-2xl font-bold text-slate-900">Crear Curso</h4>
+                <h4 className="text-2xl font-bold text-slate-900">
+                    Crear Curso
+                </h4>
                 <div className="min-w-[150px]">
                     <button
                         type="button"
@@ -156,9 +172,15 @@ const CrearCursos = () => {
                                     </option>
                                     {(options?.pensums ?? []).map((p) => {
                                         const value = p?.id ?? p?.value ?? p;
-                                        const label = p?.nombre ?? p?.label ?? String(value);
+                                        const label =
+                                            p?.nombre ??
+                                            p?.label ??
+                                            String(value);
                                         return (
-                                            <option key={String(value)} value={value}>
+                                            <option
+                                                key={String(value)}
+                                                value={value}
+                                            >
                                                 {label}
                                             </option>
                                         );
@@ -231,7 +253,6 @@ const CrearCursos = () => {
                     </form>
                 </div>
             </div>
-
         </div>
     );
 };

@@ -1,10 +1,13 @@
-import { Menu, LogOut } from "lucide-react"; // lucide-react icons
+import { Menu, LogOut, HomeIcon } from "lucide-react"; // lucide-react icons
+import { useNavigate } from "react-router-dom";
 
-const SITE_NAME = import.meta.env.SITE_NAME;
+const SITE_NAME = import.meta.env.VITE_SITE_NAME;
 
 export default function Navbar({ toggleSidebar, onLogout }) {
+    const navigate = useNavigate();
+
     return (
-        <nav className="w-full bg-white shadow">
+        <nav className="w-full bg-white shadow z-1000">
             <div className="flex items-center justify-between px-4 py-3">
                 <button
                     onClick={toggleSidebar}
@@ -12,6 +15,13 @@ export default function Navbar({ toggleSidebar, onLogout }) {
                     aria-label="menu"
                 >
                     <Menu className="h-6 w-6" />
+                </button>
+
+                <button
+                    onClick={() => navigate("/dashboard")}
+                    className="text-slate-700 hover:text-slate-900 ml-2"
+                >
+                    <HomeIcon className="h-6 w-6" />
                 </button>
 
                 <h1 className="flex-grow text-center text-lg font-bold text-slate-900 drop-shadow-md">

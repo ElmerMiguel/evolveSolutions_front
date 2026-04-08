@@ -1,89 +1,83 @@
 import { useState } from "react";
-import {Link, NavLink} from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import Navbar from "./Navbar.jsx";
 import useHandleRoutes from "../../routes/useHandleRoutes.jsx";
 import useValidarPermiso from "../../hooks/useValidarPermiso.js";
-import {TIPOS_AUTORIZACIONES} from "../../entities/enums/TiposAutorizacion.js";
-import {useAuth} from "../../contexts/auth/AuthContext.jsx"; // using lucide-react icons
+import { TIPOS_AUTORIZACIONES } from "../../entities/enums/TiposAutorizacion.js";
+import { useAuth } from "../../contexts/auth/AuthContext.jsx";
 
-const SITE_NAME = import.meta.env.SITE_NAME;
+const SITE_NAME = import.meta.env.VITE_SITE_NAME;
 const { LECTURA } = TIPOS_AUTORIZACIONES;
 
 export default function Sidebar({ sidebarItems }) {
     const [open, setOpen] = useState(false);
-    const { validarPermiso } = useValidarPermiso()
+    const { validarPermiso } = useValidarPermiso();
     const [openCollapse, setOpenCollapse] = useState(false);
     const [openNestedCollapse, setOpenNestedCollapse] = useState(false);
     const { logout } = useAuth();
 
-    const routes = useHandleRoutes()
+    const routes = useHandleRoutes();
 
     const validarItemsMenu = () => {
         try {
-            let navItems = []
+            let navItems = [];
 
             for (const route of routes) {
-
                 if (!route.collapse) {
-
                     try {
-                        const isValid = validarPermiso(route?.permiso, (route?.tipoAutorizacion || LECTURA))
-                        if (route?.backButton) navItems.push(route)
-
-                        if (!isValid) continue
-                    }  catch (error){
-                        console.log(error)
-
+                        const isValid = validarPermiso(
+                            route?.permiso,
+                            route?.tipoAutorizacion || LECTURA
+                        );
+                        if (route?.backButton) navItems.push(route);
+                        if (!isValid) continue;
+                    } catch (error) {
+                        console.log(error);
                     }
-
-                    navItems.push(route)
-
+                    navItems.push(route);
                 } else {
-
-                    let subRoutes = []
+                    let subRoutes = [];
                     for (const subRoute of route.collapse) {
                         if (!subRoute.collapse) {
-
-                            const isValidSubRoute = validarPermiso(subRoute.permiso, (subRoute?.tipoAutorizacion || LECTURA))
-                            if (route.backButton) navItems.push(route)
-                            if (!isValidSubRoute) continue
-                            subRoutes.push(subRoute)
+                            const isValidSubRoute = validarPermiso(
+                                subRoute.permiso,
+                                subRoute?.tipoAutorizacion || LECTURA
+                            );
+                            if (route.backButton) navItems.push(route);
+                            if (!isValidSubRoute) continue;
+                            subRoutes.push(subRoute);
                         } else {
-
-                            let subSubRoutes = []
-
+                            let subSubRoutes = [];
                             for (const subSubRoute of subRoute.collapse) {
-
-                                const isValid = validarPermiso(subSubRoute.permiso, (subSubRoute?.tipoAutorizacion || LECTURA))
-                                if (!isValid) continue
-                                subSubRoutes.push(subSubRoute)
+                                const isValid = validarPermiso(
+                                    subSubRoute.permiso,
+                                    subSubRoute?.tipoAutorizacion || LECTURA
+                                );
+                                if (!isValid) continue;
+                                subSubRoutes.push(subSubRoute);
                             }
-
-                            subRoute.collapse = subSubRoutes
-
+                            subRoute.collapse = subSubRoutes;
                             if (subSubRoutes.length > 0) {
-                                subRoutes.push(subRoute)
+                                subRoutes.push(subRoute);
                             }
-
                         }
                     }
-                    route.collapse = subRoutes
-
+                    route.collapse = subRoutes;
                     if (subRoutes.length > 0) {
-                        navItems.push(route)
+                        navItems.push(route);
                     }
                 }
             }
 
-            return navItems
+            return navItems;
         } catch {
-            return []
+            return [];
         }
-    }
+    };
 
     const renderNestedCollapse = (collapse) => {
-        return collapse.map(({ name, route, key, href }) =>
+        return collapse.map(({ name, route, to, key, href }) =>
             href ? (
                 <a
                     key={key}
@@ -96,11 +90,13 @@ export default function Sidebar({ sidebarItems }) {
                 </a>
             ) : (
                 <NavLink
-                    to={route}
+                    to={to || route}
                     key={key}
                     className={({ isActive }) =>
                         `block pl-8 pr-3 py-2 text-sm rounded-md ${
-                            isActive ? "bg-slate-200 text-slate-800" : "text-slate-600 hover:bg-slate-100"
+                            isActive
+                                ? "bg-slate-200 text-slate-800"
+                                : "text-slate-600 hover:bg-slate-100"
                         }`
                     }
                 >
@@ -111,15 +107,16 @@ export default function Sidebar({ sidebarItems }) {
     };
 
     const renderCollapse = (collapses) =>
-        collapses.map(({ name, collapse, route, href, key }) => {
+        collapses.map(({ name, collapse, route, to, href, key }) => {
             if (collapse) {
                 const isOpen = openNestedCollapse === name;
-
                 return (
                     <li key={key} className="space-y-1">
                         <button
                             type="button"
-                            onClick={() => setOpenNestedCollapse(isOpen ? false : name)}
+                            onClick={() =>
+                                setOpenNestedCollapse(isOpen ? false : name)
+                            }
                             className={`flex w-full items-center justify-between px-3 py-2 text-slate-700 rounded-md hover:bg-slate-100 ${
                                 isOpen ? "bg-slate-200" : ""
                             }`}
@@ -127,7 +124,6 @@ export default function Sidebar({ sidebarItems }) {
                             <span>{name}</span>
                             <span className="ml-2">{isOpen ? "▲" : "▼"}</span>
                         </button>
-
                         {isOpen && (
                             <ul className="mt-1 space-y-1">
                                 {renderNestedCollapse(collapse)}
@@ -151,10 +147,12 @@ export default function Sidebar({ sidebarItems }) {
             ) : (
                 <li key={key}>
                     <NavLink
-                        to={route}
+                        to={to || route}
                         className={({ isActive }) =>
                             `block px-3 py-2 rounded-md ${
-                                isActive ? "bg-slate-200 text-slate-800" : "text-slate-700 hover:bg-slate-100"
+                                isActive
+                                    ? "bg-slate-200 text-slate-800"
+                                    : "text-slate-700 hover:bg-slate-100"
                             }`
                         }
                     >
@@ -166,7 +164,7 @@ export default function Sidebar({ sidebarItems }) {
 
     return (
         <div className="flex">
-            <Navbar toggleSidebar={() => setOpen(true)} onLogout={logout}/>
+            <Navbar toggleSidebar={() => setOpen(true)} onLogout={logout} />
             {open && (
                 <div
                     className="fixed inset-0 bg-black/30"
@@ -179,7 +177,9 @@ export default function Sidebar({ sidebarItems }) {
           ${open ? "translate-x-0" : "-translate-x-full"}`}
             >
                 <div className="flex items-center justify-between px-4 py-3 border-b">
-                    <h1 className="text-lg font-semibold text-slate-900">{SITE_NAME}</h1>
+                    <h1 className="text-lg font-semibold text-slate-900">
+                        {SITE_NAME}
+                    </h1>
                     <button
                         onClick={() => setOpen(false)}
                         className="text-slate-700 hover:text-slate-900"
@@ -190,7 +190,18 @@ export default function Sidebar({ sidebarItems }) {
 
                 <ul className="p-4 space-y-2">
                     {validarItemsMenu(routes).map(
-                        ({ type, name, icon, title, collapse, noCollapse, key, href, route }) => {
+                        ({
+                            type,
+                            name,
+                            icon,
+                            title,
+                            collapse,
+                            noCollapse,
+                            key,
+                            href,
+                            route,
+                            to,
+                        }) => {
                             if (type === "collapse") {
                                 if (href) {
                                     return (
@@ -201,43 +212,59 @@ export default function Sidebar({ sidebarItems }) {
                                                 rel="noreferrer"
                                                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-100"
                                             >
-                                                <span className="text-slate-700">{icon}</span>
-                                                <span className="text-sm font-medium">{name}</span>
+                                                <span className="text-slate-700">
+                                                    {icon}
+                                                </span>
+                                                <span className="text-sm font-medium">
+                                                    {name}
+                                                </span>
                                             </a>
                                         </li>
                                     );
                                 }
 
-                                if (noCollapse && route) {
-                                    // Important: do NOT render children inside the NavLink (causes horizontal/inline layout)
+                                if (noCollapse && (route || to)) {
                                     return (
                                         <li key={key}>
                                             <NavLink
-                                                to={route}
+                                                to={to || route}
                                                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-100"
                                             >
-                                                <span className="text-slate-700">{icon}</span>
-                                                <span className="text-sm font-medium">{name}</span>
+                                                <span className="text-slate-700">
+                                                    {icon}
+                                                </span>
+                                                <span className="text-sm font-medium">
+                                                    {name}
+                                                </span>
                                             </NavLink>
                                         </li>
                                     );
                                 }
 
-                                // Collapsible section: header button + nested <ul> below (only when open)
                                 const isOpen = openCollapse === key;
 
                                 return (
                                     <li key={key} className="space-y-1">
                                         <button
                                             type="button"
-                                            onClick={() => setOpenCollapse(isOpen ? false : key)}
+                                            onClick={() =>
+                                                setOpenCollapse(
+                                                    isOpen ? false : key
+                                                )
+                                            }
                                             className={`flex items-center gap-3 w-full rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-100 ${
                                                 isOpen ? "bg-slate-200" : ""
                                             }`}
                                         >
-                                            <span className="text-slate-700">{icon}</span>
-                                            <span className="text-sm font-medium">{name}</span>
-                                            <span className="ml-auto">{isOpen ? "▲" : "▼"}</span>
+                                            <span className="text-slate-700">
+                                                {icon}
+                                            </span>
+                                            <span className="text-sm font-medium">
+                                                {name}
+                                            </span>
+                                            <span className="ml-auto">
+                                                {isOpen ? "▲" : "▼"}
+                                            </span>
                                         </button>
 
                                         {isOpen && collapse ? (
@@ -257,14 +284,17 @@ export default function Sidebar({ sidebarItems }) {
                                     </li>
                                 );
                             } else if (type === "divider") {
-                                return <li key={key}><hr className="border-t border-slate-200 my-2" /></li>;
+                                return (
+                                    <li key={key}>
+                                        <hr className="border-t border-slate-200 my-2" />
+                                    </li>
+                                );
                             }
                             return null;
                         }
                     )}
                 </ul>
             </div>
-
         </div>
     );
 }
