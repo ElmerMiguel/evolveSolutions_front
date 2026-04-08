@@ -9,7 +9,7 @@ const GestionProgramasRoutes = () => {
         {
             path: "upload", 
             element: <UploadProgram />,
-        }
+        } 
     ]);
 
     return routes;
