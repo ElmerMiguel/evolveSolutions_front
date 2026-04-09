@@ -69,7 +69,7 @@ export function AuthProvider({ children }) {
             rol,
             permisos,
         }),
-        [token, user]
+        [token, user, rol, permisos]
     );
 
     return (
