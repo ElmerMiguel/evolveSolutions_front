@@ -2,6 +2,9 @@ import React from "react";
 import Login from "../pages/auth/Login.jsx";
 import { Book } from "lucide-react";
 import cursosRoutes from "./Cursos/index.jsx";
+import programasRoutes from './Programas/index.jsx';
+import docenteRoutes from "./Docente";
+import estudianteRoutes from "./Estudiante";
 import SolicitudEquivalencia from "../pages/SolicitudEquivalencia.jsx";
 import Solicitudes from "../pages/Solicitudes.jsx";
 import CargaArchivos from "../pages/CargaArchivos.jsx";
@@ -48,6 +51,27 @@ const UseHandleRoutes = () => {
             icon: <Book className="w-6 h-6 text-blue-500" />,
             collapse: cursosRoutes,
         },
+        {
+            type: "collapse",
+            name: "Programas",
+            key: "programas",
+            icon: <svg className="w-6 h-6 text-amber-500"></svg>,
+            collapse: programasRoutes
+        },
+        {
+            type: "collapse",
+            name: "Docente",
+            key: "docente",
+            icon: <svg className="w-6 h-6 text-emerald-500"></svg>,
+            collapse: docenteRoutes
+        },
+        {
+            type: "collapse",
+            name: "Estudiante",
+            key: "estudiante",
+            icon: <svg className="w-6 h-6 text-indigo-500"></svg>,
+            collapse: estudianteRoutes
+          },
 
         {
             name: "Solicitud Equivalencia",

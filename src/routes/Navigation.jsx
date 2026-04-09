@@ -56,19 +56,19 @@ const Navigation = () => {
     const { token } = useAuth();
     const routes = useHandleRoutes();
 
-    const handleOnMouseEnter = () => {
-        if (miniSidenav && !onMouseEnter) {
-            setMiniSidenav(dispatch, false);
-            setOnMouseEnter(true);
-        }
-    };
+  const handleOnMouseEnter = () => {
+    if (miniSidenav && !onMouseEnter) {
+      setMiniSidenav(dispatch, false);
+      setOnMouseEnter(true);
+    }
+  };
 
-    const handleOnMouseLeave = () => {
-        if (onMouseEnter) {
-            setMiniSidenav(dispatch, true);
-            setOnMouseEnter(false);
-        }
-    };
+  const handleOnMouseLeave = () => {
+    if (onMouseEnter) {
+      setMiniSidenav(dispatch, true);
+      setOnMouseEnter(false);
+    }
+  };
 
     useEffect(() => {
         if (
