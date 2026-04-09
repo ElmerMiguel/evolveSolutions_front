@@ -3,6 +3,8 @@ import Login from "../pages/auth/Login.jsx";
 import {Book} from "lucide-react";
 import cursosRoutes from "./Cursos/index.jsx";
 import programasRoutes from './Programas/index.jsx';
+import docenteRoutes from "./Docente";
+import estudianteRoutes from "./Estudiante";
 
 const UseHandleRoutes = () => {
     return [
@@ -33,7 +35,21 @@ const UseHandleRoutes = () => {
             key: "programas",
             icon: <svg className="w-6 h-6 text-amber-500"></svg>,
             collapse: programasRoutes
-        }
+        },
+        {
+            type: "collapse",
+            name: "Docente",
+            key: "docente",
+            icon: <svg className="w-6 h-6 text-emerald-500"></svg>,
+            collapse: docenteRoutes
+        },
+        {
+            type: "collapse",
+            name: "Estudiante",
+            key: "estudiante",
+            icon: <svg className="w-6 h-6 text-indigo-500"></svg>,
+            collapse: estudianteRoutes
+          }
     ];
 };
 
