@@ -1,331 +1,470 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { http } from "../../api/http.js";
+import { useErrorSnackbar } from "../../contexts/error/ErrorSnackbarProvider.jsx";
 
-export default function CursosDocente() {
-  const navigate = useNavigate();
+const SEMESTRES = ["Primer Semestre", "Segundo Semestre"];
+const YEAR = new Date().getFullYear();
+const YEARS = [
+    2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023,
+    2024, 2025, 2026,
+];
+const CAREERS = [
+    {
+        code: "SIS",
+        name: "Ingeniería en Ciencias y Sistemas",
+    },
+    {
+        code: "CIV",
+        name: "Ingeniería Civil",
+    },
+    {
+        code: "IND",
+        name: "Ingeniería Industrial",
+    },
+    {
+        code: "MEC",
+        name: "Ingeniería Mecánica",
+    },
+    {
+        code: "MEC_IND",
+        name: "Ingeniería Mecánica Industrial",
+    },
+];
 
-  const [form, setForm] = useState({
+const initialForm = {
     nombreDocente: "",
     codigoCurso: "",
     nombreCurso: "",
     carrera: "",
     semestre: "",
     seccion: "",
-  });
+};
 
-  const [errores, setErrores] = useState({});
-  const [cursos, setCursos] = useState([]);
+export default function DocenteCursos() {
+    const navigate = useNavigate();
+    const { showError } = useErrorSnackbar();
 
-  useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("docenteCursos")) || [];
-    setCursos(data);
-  }, []);
+    const [form, setForm] = useState(initialForm);
+    const [errores, setErrores] = useState({});
+    const [busy, setBusy] = useState(false);
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm({
-      ...form,
-      [name]: value,
-    });
-  }
+    const [asignaciones, setAsignaciones] = useState([]);
+    const [loadingAsig, setLoadingAsig] = useState(false);
 
-  function validar() {
-    const nuevosErrores = {};
+    const [cursos, setCursos] = useState([]);
+    const [loadingCursos, setLoadingCursos] = useState(false);
 
-    if (!form.nombreDocente.trim()) {
-      nuevosErrores.nombreDocente = "El nombre del docente es obligatorio";
-    } else if (form.nombreDocente.trim().length < 5) {
-      nuevosErrores.nombreDocente = "El nombre debe tener al menos 5 caracteres";
-    }
+    const [selectedSemLabel, setSelectedSemLabel] = useState("");
+    const [selectedYear, setSelectedYear] = useState(String(YEAR));
 
-    if (!form.codigoCurso.trim()) {
-      nuevosErrores.codigoCurso = "El código del curso es obligatorio";
-    }
+    useEffect(() => {
+        void fetchAsignaciones();
+        void fetchCursos();
+    }, []);
 
-    if (!form.nombreCurso.trim()) {
-      nuevosErrores.nombreCurso = "El nombre del curso es obligatorio";
-    }
-
-    if (!form.carrera.trim()) {
-      nuevosErrores.carrera = "La carrera es obligatoria";
-    }
-
-    if (!form.semestre.trim()) {
-      nuevosErrores.semestre = "El semestre es obligatorio";
-    }
-
-    if (!form.seccion.trim()) {
-      nuevosErrores.seccion = "La sección es obligatoria";
-    }
-
-    return nuevosErrores;
-  }
-
-  function handleSubmit(e) {
-    e.preventDefault();
-
-    const nuevosErrores = validar();
-    setErrores(nuevosErrores);
-
-    if (Object.keys(nuevosErrores).length > 0) return;
-
-    const nuevoCurso = {
-      id: Date.now(),
-      ...form,
-      fechaRegistro: new Date().toISOString(),
+    const fetchAsignaciones = async () => {
+        setLoadingAsig(true);
+        try {
+            const res = await http("/docenteCursos", { method: "GET" });
+            setAsignaciones(Array.isArray(res.data) ? res.data : []);
+        } catch (e) {
+            showError(e?.message ?? "Error al cargar asignaciones");
+        } finally {
+            setLoadingAsig(false);
+        }
     };
 
-    const actualizados = [...cursos, nuevoCurso];
-    setCursos(actualizados);
-    localStorage.setItem("docenteCursos", JSON.stringify(actualizados));
+    const fetchCursos = async () => {
+        setLoadingCursos(true);
+        try {
+            const res = await http("/cursos", { method: "GET" });
+            setCursos(Array.isArray(res.data) ? res.data : []);
+        } catch (e) {
+            showError(e?.message ?? "Error al cargar cursos");
+        } finally {
+            setLoadingCursos(false);
+        }
+    };
 
-    setForm({
-      nombreDocente: "",
-      codigoCurso: "",
-      nombreCurso: "",
-      carrera: "",
-      semestre: "",
-      seccion: "",
-    });
+    const handleCursoChange = (e) => {
+        const selected = cursos.find((c) => c.code === e.target.value);
+        if (selected) {
+            setForm((f) => ({
+                ...f,
+                codigoCurso: selected.code,
+                nombreCurso: selected.name,
+            }));
+        } else {
+            setForm((f) => ({ ...f, codigoCurso: "", nombreCurso: "" }));
+        }
+    };
 
-    setErrores({});
-  }
+    const buildSemestre = () => {
+        if (!selectedSemLabel || !selectedYear) return "";
+        return `${selectedSemLabel} ${selectedYear}`;
+    };
 
-  function eliminarCurso(id) {
-    const actualizados = cursos.filter((curso) => curso.id !== id);
-    setCursos(actualizados);
-    localStorage.setItem("docenteCursos", JSON.stringify(actualizados));
-  }
+    const validar = () => {
+        const e = {};
+        if (!form.nombreDocente.trim()) e.nombreDocente = "Requerido";
+        else if (form.nombreDocente.trim().length < 5)
+            e.nombreDocente = "Mínimo 5 caracteres";
+        if (!form.codigoCurso) e.codigoCurso = "Selecciona un curso";
+        if (!form.carrera.trim()) e.carrera = "Requerido";
+        if (!selectedSemLabel) e.semestre = "Selecciona semestre";
+        if (!selectedYear) e.year = "Selecciona año";
+        if (!form.seccion.trim()) e.seccion = "Requerido";
+        return e;
+    };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-brand-100 p-6">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-xl shadow-brand-500/10 backdrop-blur">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">
-                Registro de Cursos del Docente
-              </h1>
-              <p className="mt-2 text-sm text-slate-600">
-                Registra los cursos que imparte cada docente dentro del sistema.
-              </p>
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const errs = validar();
+        setErrores(errs);
+        if (Object.keys(errs).length > 0) return;
+
+        setBusy(true);
+        try {
+            const payload = {
+                ...form,
+                semestre: buildSemestre(),
+            };
+            const res = await http("/docenteCursos", {
+                method: "POST",
+                body: payload,
+            });
+            if (res.status === 201 || res.status === 200) {
+                setForm(initialForm);
+                setSelectedSemLabel("");
+                setSelectedYear(String(YEAR));
+                setErrores({});
+                void fetchAsignaciones();
+            } else {
+                showError(res.data?.error ?? "Error al crear asignación");
+            }
+        } catch (err) {
+            showError(err?.message ?? "Error desconocido");
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h4 className="text-2xl font-bold text-slate-900">
+                        Cursos por Docente
+                    </h4>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Asigna cursos impartidos a cada docente
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => navigate("/dashboard")}
+                    className="px-4 py-2 rounded-md border border-slate-300 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                    Volver al dashboard
+                </button>
             </div>
 
-            <div className="flex gap-3">
-              <Link
-                to="/dashboard"
-                className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                Volver al dashboard
-              </Link>
-            </div>
-          </div>
-        </div>
+            <hr className="border-t border-gray-200" />
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Nuevo curso impartido
-            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* ── Formulario ── */}
+                <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6">
+                    <h2 className="text-lg font-semibold text-slate-900 mb-5">
+                        Nueva asignación
+                    </h2>
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Nombre del docente
-                </label>
-                <input
-                  type="text"
-                  name="nombreDocente"
-                  value={form.nombreDocente}
-                  onChange={handleChange}
-                  placeholder="Ingrese el nombre del docente"
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                />
-                {errores.nombreDocente && (
-                  <p className="mt-2 text-sm text-red-600">{errores.nombreDocente}</p>
-                )}
-              </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Nombre del docente */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Nombre del docente
+                            </label>
+                            <input
+                                type="text"
+                                value={form.nombreDocente}
+                                onChange={(e) =>
+                                    setForm((f) => ({
+                                        ...f,
+                                        nombreDocente: e.target.value,
+                                    }))
+                                }
+                                placeholder="Ej: Juan Pérez"
+                                className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
+                            />
+                            {errores.nombreDocente && (
+                                <p className="text-xs text-red-600 mt-1">
+                                    {errores.nombreDocente}
+                                </p>
+                            )}
+                        </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Código del curso
-                </label>
-                <input
-                  type="text"
-                  name="codigoCurso"
-                  value={form.codigoCurso}
-                  onChange={handleChange}
-                  placeholder="Ingrese el código del curso"
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                />
-                {errores.codigoCurso && (
-                  <p className="mt-2 text-sm text-red-600">{errores.codigoCurso}</p>
-                )}
-              </div>
+                        {/* Selector de curso */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Curso
+                            </label>
+                            <select
+                                value={form.codigoCurso}
+                                onChange={handleCursoChange}
+                                disabled={loadingCursos}
+                                className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-300 disabled:opacity-60"
+                            >
+                                <option value="">
+                                    {loadingCursos
+                                        ? "Cargando cursos..."
+                                        : "Selecciona un curso"}
+                                </option>
+                                {cursos.map((c) => (
+                                    <option key={c.id} value={c.code}>
+                                        {c.code} — {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                            {errores.codigoCurso && (
+                                <p className="text-xs text-red-600 mt-1">
+                                    {errores.codigoCurso}
+                                </p>
+                            )}
+                        </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Nombre del curso
-                </label>
-                <input
-                  type="text"
-                  name="nombreCurso"
-                  value={form.nombreCurso}
-                  onChange={handleChange}
-                  placeholder="Ingrese el nombre del curso"
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                />
-                {errores.nombreCurso && (
-                  <p className="mt-2 text-sm text-red-600">{errores.nombreCurso}</p>
-                )}
-              </div>
+                        {/* Código y nombre auto-rellenados (solo lectura) */}
+                        {form.codigoCurso && (
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs text-slate-500 mb-1">
+                                        Código
+                                    </label>
+                                    <input
+                                        readOnly
+                                        value={form.codigoCurso}
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-slate-500 mb-1">
+                                        Nombre del curso
+                                    </label>
+                                    <input
+                                        readOnly
+                                        value={form.nombreCurso}
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-600"
+                                    />
+                                </div>
+                            </div>
+                        )}
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Carrera
-                </label>
-                <input
-                  type="text"
-                  name="carrera"
-                  value={form.carrera}
-                  onChange={handleChange}
-                  placeholder="Ingrese la carrera"
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                />
-                {errores.carrera && (
-                  <p className="mt-2 text-sm text-red-600">{errores.carrera}</p>
-                )}
-              </div>
+                        {/* Carrera */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Carrera
+                            </label>
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Semestre
-                </label>
-                <input
-                  type="text"
-                  name="semestre"
-                  value={form.semestre}
-                  onChange={handleChange}
-                  placeholder="Ejemplo: Primer Semestre 2026"
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                />
-                {errores.semestre && (
-                  <p className="mt-2 text-sm text-red-600">{errores.semestre}</p>
-                )}
-              </div>
+                            <select
+                                value={form.carrera}
+                                onChange={(e) =>
+                                    setForm((f) => ({
+                                        ...f,
+                                        carrera: e.target.value,
+                                    }))
+                                }
+                                className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-300"
+                            >
+                                <option value="">Selecciona una carrera</option>
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Sección
-                </label>
-                <input
-                  type="text"
-                  name="seccion"
-                  value={form.seccion}
-                  onChange={handleChange}
-                  placeholder="Ingrese la sección"
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                />
-                {errores.seccion && (
-                  <p className="mt-2 text-sm text-red-600">{errores.seccion}</p>
-                )}
-              </div>
+                                {CAREERS.map((c) => (
+                                    <option key={c.code} value={c.code}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
 
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => navigate("/dashboard")}
-                  className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Cancelar
-                </button>
+                            {errores.carrera && (
+                                <p className="text-xs text-red-600 mt-1">
+                                    {errores.carrera}
+                                </p>
+                            )}
+                        </div>
 
-                <button
-                  type="submit"
-                  className="rounded-2xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700"
-                >
-                  Guardar curso
-                </button>
-              </div>
-            </form>
-          </div>
+                        {/* Semestre + Año */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Semestre
+                                </label>
+                                <select
+                                    value={selectedSemLabel}
+                                    onChange={(e) =>
+                                        setSelectedSemLabel(e.target.value)
+                                    }
+                                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-300"
+                                >
+                                    <option value="">Selecciona</option>
+                                    {SEMESTRES.map((s) => (
+                                        <option key={s} value={s}>
+                                            {s}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errores.semestre && (
+                                    <p className="text-xs text-red-600 mt-1">
+                                        {errores.semestre}
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Año
+                                </label>
+                                <select
+                                    value={selectedYear}
+                                    onChange={(e) =>
+                                        setSelectedYear(e.target.value)
+                                    }
+                                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-300"
+                                >
+                                    {YEARS.map((y) => (
+                                        <option key={y} value={String(y)}>
+                                            {y}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errores.year && (
+                                    <p className="text-xs text-red-600 mt-1">
+                                        {errores.year}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Cursos registrados
-            </h2>
+                        {/* Sección */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Sección
+                            </label>
+                            <input
+                                type="text"
+                                value={form.seccion}
+                                onChange={(e) =>
+                                    setForm((f) => ({
+                                        ...f,
+                                        seccion: e.target.value,
+                                    }))
+                                }
+                                placeholder="Ej: A"
+                                maxLength={5}
+                                className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
+                            />
+                            {errores.seccion && (
+                                <p className="text-xs text-red-600 mt-1">
+                                    {errores.seccion}
+                                </p>
+                            )}
+                        </div>
 
-            {cursos.length === 0 ? (
-              <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">
-                No hay cursos registrados todavía.
-              </div>
-            ) : (
-              <div className="mt-6 overflow-x-auto">
-                <table className="min-w-full border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-left">
-                      <th className="px-4 py-3 text-sm font-semibold text-slate-800">
-                        Docente
-                      </th>
-                      <th className="px-4 py-3 text-sm font-semibold text-slate-800">
-                        Código
-                      </th>
-                      <th className="px-4 py-3 text-sm font-semibold text-slate-800">
-                        Curso
-                      </th>
-                      <th className="px-4 py-3 text-sm font-semibold text-slate-800">
-                        Carrera
-                      </th>
-                      <th className="px-4 py-3 text-sm font-semibold text-slate-800">
-                        Semestre
-                      </th>
-                      <th className="px-4 py-3 text-sm font-semibold text-slate-800">
-                        Sección
-                      </th>
-                      <th className="px-4 py-3 text-sm font-semibold text-slate-800">
-                        Acción
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cursos.map((curso) => (
-                      <tr key={curso.id} className="border-b border-slate-100">
-                        <td className="px-4 py-3 text-sm text-slate-700">
-                          {curso.nombreDocente}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-700">
-                          {curso.codigoCurso}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-700">
-                          {curso.nombreCurso}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-700">
-                          {curso.carrera}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-700">
-                          {curso.semestre}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-700">
-                          {curso.seccion}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <button
+                        <div className="flex justify-end gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setForm(initialForm);
+                                    setErrores({});
+                                    setSelectedSemLabel("");
+                                    setSelectedYear(String(YEAR));
+                                }}
+                                className="px-4 py-2 rounded-xl border border-slate-300 text-sm text-slate-700 hover:bg-slate-50"
+                            >
+                                Limpiar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={busy}
+                                className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 hover:opacity-95 disabled:opacity-60"
+                            >
+                                {busy ? "Guardando..." : "Guardar asignación"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {/* ── Listado ── */}
+                <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-5">
+                        <h2 className="text-lg font-semibold text-slate-900">
+                            Asignaciones registradas
+                        </h2>
+                        <button
                             type="button"
-                            onClick={() => eliminarCurso(curso.id)}
-                            className="rounded-xl border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
-                          >
-                            Eliminar
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                            onClick={fetchAsignaciones}
+                            disabled={loadingAsig}
+                            className="text-xs text-sky-600 hover:underline disabled:opacity-50"
+                        >
+                            {loadingAsig ? "Cargando..." : "Actualizar"}
+                        </button>
+                    </div>
+
+                    {loadingAsig ? (
+                        <p className="text-sm text-slate-500 text-center py-8">
+                            Cargando asignaciones...
+                        </p>
+                    ) : asignaciones.length === 0 ? (
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 py-10 text-center text-sm text-slate-500">
+                            No hay asignaciones registradas.
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full text-sm border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-200">
+                                        <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                            Docente
+                                        </th>
+                                        <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                            Curso
+                                        </th>
+                                        <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                            Semestre
+                                        </th>
+                                        <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                            Sección
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {asignaciones.map((a, i) => (
+                                        <tr
+                                            key={i}
+                                            className="border-b border-slate-100 hover:bg-slate-50"
+                                        >
+                                            <td className="px-3 py-2.5 text-slate-800">
+                                                {a.nombreprofesor ??
+                                                    a.nombreProfesor}
+                                            </td>
+                                            <td className="px-3 py-2.5">
+                                                <span className="font-mono text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded mr-1">
+                                                    {a.codigocurso ??
+                                                        a.codigoCurso}
+                                                </span>
+                                                {a.nombrecurso ?? a.nombreCurso}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-slate-600">
+                                                {a.semestre}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-slate-600">
+                                                {a.seccion}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

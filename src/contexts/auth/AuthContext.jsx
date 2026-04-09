@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
         if (!t) throw new Error("El backend no devolvió token");
 
         setToken(t);
-        const userRole = data.session?.user?.role || "STUDENT";
+        const userRole = data.role || "STUDENT";
         setRol(userRole);
 
         const backendPermisos = data.permisos || [];
