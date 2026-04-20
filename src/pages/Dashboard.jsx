@@ -426,7 +426,10 @@ export default function DashboardModerno() {
               Pendientes
             </p>
             <h2 className="text-4xl font-black text-slate-800 mt-2">12</h2>
-            <div className="flex items-center gap-2 mt-4 text-sm text-brand-600 font-medium cursor-pointer hover:underline">
+            <button
+              onClick={() => navigate("/secretaria/cambio-estado")}
+              className="flex items-center gap-2 mt-4 text-sm text-brand-600 font-medium cursor-pointer hover:underline"
+            >
               Ir a revisión{" "}
               <svg
                 className="w-4 h-4"
@@ -441,7 +444,7 @@ export default function DashboardModerno() {
                   d="M14 5l7 7m0 0l-7 7m7-7H3"
                 ></path>
               </svg>
-            </div>
+            </button>
           </div>
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
             <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
@@ -518,7 +521,7 @@ export default function DashboardModerno() {
                 <td className="px-4 py-4">Hace 2 horas</td>
                 <td className="px-4 py-4 text-right">
                   <button
-                    onClick={() => navigate("/dashboard")}
+                    onClick={() => navigate("/secretaria/cambio-estado")}
                     className="text-brand-600 font-bold hover:underline"
                   >
                     Revisar »
@@ -538,7 +541,7 @@ export default function DashboardModerno() {
                 <td className="px-4 py-4">Hace 5 horas</td>
                 <td className="px-4 py-4 text-right">
                   <button
-                    onClick={() => navigate("/dashboard")}
+                    onClick={() => navigate("/secretaria/cambio-estado")}
                     className="text-brand-600 font-bold hover:underline"
                   >
                     Revisar »
@@ -591,4 +594,3 @@ export default function DashboardModerno() {
     </div>
   );
 }
-
