@@ -80,7 +80,17 @@ export default function CambioEstadoSolicitud() {
 
     localStorage.setItem("solicitudes", JSON.stringify(solicitudesActualizadas));
     setSolicitudes(solicitudesActualizadas);
-    showSuccess("Estado actualizado correctamente. El correo fue enviado");
+
+    const solicitudActualizada = solicitudesActualizadas.find(
+      (solicitud) => String(solicitud.id) === solicitudId
+    );
+    const correoDestino = solicitudActualizada?.correo?.trim();
+
+    showSuccess(
+      correoDestino
+        ? `Estado actualizado correctamente. Se envió el correo de confirmación a ${correoDestino}`
+        : "Estado actualizado correctamente. El correo fue enviado"
+    );
   }
 
   return (

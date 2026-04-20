@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/auth/AuthContext.jsx";
 
 export default function SolicitudEquivalencia() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [form, setForm] = useState({
     nombre: "",
@@ -71,6 +73,25 @@ export default function SolicitudEquivalencia() {
     return nuevosErrores;
   }
 
+  function obtenerCorreoEstudiante() {
+    if (typeof user?.email === "string" && user.email.trim()) {
+      return user.email.trim();
+    }
+
+    try {
+      const usuarioGuardado = JSON.parse(localStorage.getItem("user") || "null");
+
+      if (
+        typeof usuarioGuardado?.email === "string" &&
+        usuarioGuardado.email.trim()
+      ) {
+        return usuarioGuardado.email.trim();
+      }
+    } catch {}
+
+    return "";
+  }
+
   function handleSubmit(e) {
     e.preventDefault();
 
@@ -82,6 +103,7 @@ export default function SolicitudEquivalencia() {
     const nuevaSolicitud = {
       id: Date.now(),
       ...form,
+      correo: obtenerCorreoEstudiante(),
       estado: "En revisión",
       fechaSolicitud: new Date().toISOString(),
       cantidadArchivos: 0,
