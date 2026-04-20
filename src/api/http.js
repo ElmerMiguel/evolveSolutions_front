@@ -1,4 +1,9 @@
-const BASE_URL = import.meta.env.VITE_API_URL;
+const resolvedApiUrl =
+    window.location.hostname === "localhost"
+        ? "http://localhost:3000"
+        : import.meta.env.VITE_API_URL;
+
+const BASE_URL = resolvedApiUrl?.replace(/\/$/, "") ?? "";
 
 export async function http(path, { method = "GET", body, token } = {}) {
     const res = await fetch(`${BASE_URL}${path}`, {

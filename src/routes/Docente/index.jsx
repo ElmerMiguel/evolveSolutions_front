@@ -6,6 +6,7 @@ const docenteRoutes = [
     name: "Docente",
     key: "docente",
     route: "docente/*",
+    to: "/docente/cursos",
     component: (
       <PrivateRoute element={<GestionDocenteRoutes />} />
     ),

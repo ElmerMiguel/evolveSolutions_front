@@ -12,6 +12,8 @@ import DocumentosCargados from "../pages/DocumentosCargados.jsx";
 import EstudianteCursos from "../pages/EstudianteCursos.jsx";
 import ProgramasFirmados from "../pages/ProgramasFirmados.jsx";
 import DocenteCursos from "../pages/DocenteCursos.jsx";
+import PrivateRoute from "../components/PrivateRoute/index.jsx";
+import CambioEstadoSolicitud from "../pages/Secretaria/CambioEstadoSolicitud.jsx";
 
 const UseHandleRoutes = () => {
     return [
@@ -114,6 +116,15 @@ const UseHandleRoutes = () => {
             key: "programas-firmados",
             route: "/programas-firmados",
             component: <ProgramasFirmados />,
+        },
+        {
+            // Vista puntual para cambio de estado desde Secretaria
+            name: "Cambio Estado Solicitud",
+            key: "secretaria-cambio-estado",
+            route: "/secretaria/cambio-estado",
+            component: (
+                <PrivateRoute element={<CambioEstadoSolicitud />} />
+            ),
         },
     ];
 };

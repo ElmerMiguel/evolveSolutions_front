@@ -3,10 +3,32 @@ import { authApi } from "../../api/auth.js";
 
 const AuthContext = createContext(null);
 
+// Normaliza el rol para que el estado y localStorage usen el mismo formato
+function normalizeRole(role) {
+    if (Array.isArray(role)) {
+        return role.find(
+            (value) => typeof value === "string" && value.trim()
+        ) || "STUDENT";
+    }
+
+    if (typeof role === "string") {
+        const [firstRole] = role
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean);
+
+        return firstRole || "STUDENT";
+    }
+
+    return "STUDENT";
+}
+
 export function AuthProvider({ children }) {
     const [token, setToken] = useState(localStorage.getItem("token") || "");
     const [user, setUser] = useState(null);
-    const [rol, setRol] = useState(localStorage.getItem("rol") || "");
+    const [rol, setRol] = useState(() =>
+        normalizeRole(localStorage.getItem("rol"))
+    );
     const permisosInStorage = () => {
         try {
             return JSON.parse(localStorage.getItem("permisos") || "[]");
@@ -25,7 +47,7 @@ export function AuthProvider({ children }) {
         if (!t) throw new Error("El backend no devolvió token");
 
         setToken(t);
-        const userRole = data.role || "STUDENT";
+        const userRole = normalizeRole(data.role);
         setRol(userRole);
 
         const backendPermisos = data.permisos || [];

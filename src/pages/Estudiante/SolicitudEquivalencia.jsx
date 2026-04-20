@@ -1,8 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/auth/AuthContext.jsx";
+import { http } from "../../api/http.js";
+import { useErrorSnackbar } from "../../contexts/error/ErrorSnackbarProvider.jsx";
+
+const CARRERAS = [
+  { code: "SIS", label: "Ingeniería en Ciencias y Sistemas" },
+  { code: "CIV", label: "Ingeniería Civil" },
+  { code: "IND", label: "Ingeniería Industrial" },
+  { code: "MEC", label: "Ingeniería Mecánica" },
+  { code: "MEC_IND", label: "Ingeniería Mecánica Industrial" },
+];
 
 export default function SolicitudEquivalencia() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { showError } = useErrorSnackbar();
 
   const [form, setForm] = useState({
     nombre: "",
@@ -16,6 +29,24 @@ export default function SolicitudEquivalencia() {
   });
 
   const [errores, setErrores] = useState({});
+  const [cursos, setCursos] = useState([]);
+  const [loadingCursos, setLoadingCursos] = useState(false);
+
+  useEffect(() => {
+    void fetchCursos();
+  }, []);
+
+  async function fetchCursos() {
+    setLoadingCursos(true);
+    try {
+      const res = await http("/cursos", { method: "GET" });
+      setCursos(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      showError(error?.message ?? "Error al cargar cursos");
+    } finally {
+      setLoadingCursos(false);
+    }
+  }
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -23,6 +54,16 @@ export default function SolicitudEquivalencia() {
       ...form,
       [name]: value,
     });
+  }
+
+  function handleCursoAprobadoChange(e) {
+    const selected = cursos.find((curso) => curso.code === e.target.value);
+
+    setForm((prev) => ({
+      ...prev,
+      cursoAprobado: selected?.name || "",
+      codigoCursoAprobado: selected?.code || "",
+    }));
   }
 
   function validar() {
@@ -71,6 +112,25 @@ export default function SolicitudEquivalencia() {
     return nuevosErrores;
   }
 
+  function obtenerCorreoEstudiante() {
+    if (typeof user?.email === "string" && user.email.trim()) {
+      return user.email.trim();
+    }
+
+    try {
+      const usuarioGuardado = JSON.parse(localStorage.getItem("user") || "null");
+
+      if (
+        typeof usuarioGuardado?.email === "string" &&
+        usuarioGuardado.email.trim()
+      ) {
+        return usuarioGuardado.email.trim();
+      }
+    } catch {}
+
+    return "";
+  }
+
   function handleSubmit(e) {
     e.preventDefault();
 
@@ -82,6 +142,7 @@ export default function SolicitudEquivalencia() {
     const nuevaSolicitud = {
       id: Date.now(),
       ...form,
+      correo: obtenerCorreoEstudiante(),
       estado: "En revisión",
       fechaSolicitud: new Date().toISOString(),
       cantidadArchivos: 0,
@@ -172,14 +233,19 @@ export default function SolicitudEquivalencia() {
               <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Carrera
               </label>
-              <input
-                type="text"
+              <select
                 name="carrera"
                 value={form.carrera}
                 onChange={handleChange}
                 className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                placeholder="Ingrese la carrera"
-              />
+              >
+                <option value="">Seleccione una carrera</option>
+                {CARRERAS.map((carrera) => (
+                  <option key={carrera.code} value={carrera.label}>
+                    {carrera.label}
+                  </option>
+                ))}
+              </select>
               {errores.carrera && (
                 <p className="mt-2 text-sm text-red-600">{errores.carrera}</p>
               )}
@@ -189,14 +255,21 @@ export default function SolicitudEquivalencia() {
               <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Curso aprobado
               </label>
-              <input
-                type="text"
-                name="cursoAprobado"
-                value={form.cursoAprobado}
-                onChange={handleChange}
+              <select
+                value={form.codigoCursoAprobado}
+                onChange={handleCursoAprobadoChange}
                 className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                placeholder="Ingrese el curso aprobado"
-              />
+                disabled={loadingCursos}
+              >
+                <option value="">
+                  {loadingCursos ? "Cargando cursos..." : "Seleccione un curso"}
+                </option>
+                {cursos.map((curso) => (
+                  <option key={curso.id} value={curso.code}>
+                    {curso.code} - {curso.name}
+                  </option>
+                ))}
+              </select>
               {errores.cursoAprobado && (
                 <p className="mt-2 text-sm text-red-600">{errores.cursoAprobado}</p>
               )}
@@ -210,9 +283,9 @@ export default function SolicitudEquivalencia() {
                 type="text"
                 name="codigoCursoAprobado"
                 value={form.codigoCursoAprobado}
-                onChange={handleChange}
+                readOnly
                 className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                placeholder="Ingrese el código del curso aprobado"
+                placeholder="Seleccione un curso aprobado"
               />
               {errores.codigoCursoAprobado && (
                 <p className="mt-2 text-sm text-red-600">
