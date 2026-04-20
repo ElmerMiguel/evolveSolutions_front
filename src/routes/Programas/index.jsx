@@ -8,6 +8,7 @@ const programsRoutes = [
         name: "Programas",
         key: "programas-main",
         route: "programas/*",
+        to: "/programas/upload",
         component: (
             <PrivateRoute
                 // permisoNecesario={PERMISOS_PROGRAMAS.PROGRAMAS}
