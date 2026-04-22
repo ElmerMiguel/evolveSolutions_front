@@ -6,14 +6,21 @@ const resolvedApiUrl =
 const BASE_URL = resolvedApiUrl?.replace(/\/$/, "") ?? "";
 
 export async function http(path, { method = "GET", body, token } = {}) {
+    const isFormData =
+        typeof FormData !== "undefined" && body instanceof FormData;
+
     const res = await fetch(`${BASE_URL}${path}`, {
         method,
         headers: {
-            "Content-Type": "application/json",
+            ...(isFormData ? {} : { "Content-Type": "application/json" }),
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         credentials: "include",
-        body: body ? JSON.stringify(body) : undefined,
+        body: body
+            ? isFormData
+                ? body
+                : JSON.stringify(body)
+            : undefined,
     });
 
     let data;
