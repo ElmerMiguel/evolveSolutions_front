@@ -158,7 +158,40 @@ export default function SolicitudEquivalencia() {
         );
       }
 
-      localStorage.removeItem("solicitudActivaId");
+      const solicitudId = String(res.data?.solicitud?.id || "").trim();
+
+      if (!solicitudId) {
+        throw new Error("El backend no devolvió el id de la solicitud");
+      }
+
+      const solicitudesGuardadas =
+        JSON.parse(localStorage.getItem("solicitudes")) || [];
+
+      const nuevaSolicitudTemporal = {
+        id: solicitudId,
+        nombre: form.nombre.trim(),
+        correo: form.correo.trim(),
+        carnet: form.carnet.trim(),
+        carrera: form.carrera.trim(),
+        cursoAprobado: form.cursoAprobado.trim(),
+        codigoCursoAprobado: form.codigoCursoAprobado.trim(),
+        cursoEquivalencia: form.cursoEquivalencia.trim(),
+        codigoCursoEquivalencia: form.codigoCursoEquivalencia.trim(),
+        docente: form.docente.trim(),
+        observaciones: form.observaciones.trim(),
+        estado: "En revisión",
+        fechaSolicitud: new Date().toISOString(),
+        cantidadArchivos: 0,
+      };
+
+      const solicitudesActualizadas = solicitudesGuardadas.filter(
+        (solicitud) => String(solicitud.id) !== solicitudId
+      );
+
+      solicitudesActualizadas.push(nuevaSolicitudTemporal);
+
+      localStorage.setItem("solicitudes", JSON.stringify(solicitudesActualizadas));
+      localStorage.setItem("solicitudActivaId", solicitudId);
 
       setForm({
         nombre: "",
@@ -174,6 +207,7 @@ export default function SolicitudEquivalencia() {
       });
       setErrores({});
       showSuccess("Solicitud creada correctamente");
+      navigate("/estudiante/carga-archivos");
     } catch (error) {
       showError(error?.message ?? "Error al crear la solicitud");
     } finally {

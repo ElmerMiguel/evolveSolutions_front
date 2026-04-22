@@ -86,7 +86,7 @@ export default function CargaArchivos() {
 
       archivosValidos.push({
         id: Date.now() + Math.random(),
-        solicitudId: Number(solicitudActivaId),
+        solicitudId: solicitudActivaId,
         nombre: archivo.name,
         tipo: archivo.type,
         tamanio: archivo.size,
@@ -148,11 +148,11 @@ export default function CargaArchivos() {
 
     const solicitudes = JSON.parse(localStorage.getItem("solicitudes")) || [];
     const solicitudesActualizadas = solicitudes.map((solicitud) => {
-      if (solicitud.id === Number(solicitudActivaId)) {
+      if (String(solicitud.id) === solicitudActivaId) {
         return {
           ...solicitud,
           cantidadArchivos: todosLosArchivos.filter(
-            (archivo) => archivo.solicitudId === solicitud.id
+            (archivo) => String(archivo.solicitudId) === String(solicitud.id)
           ).length,
         };
       }
