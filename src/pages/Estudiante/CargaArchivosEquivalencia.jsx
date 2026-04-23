@@ -1,12 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { http } from "../../api/http.js";
 
-const TIPOS_PERMITIDOS = [
-  "application/pdf",
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-];
+const TIPOS_PERMITIDOS = ["application/pdf"];
 
 const TAMANIO_MAXIMO_MB = 5;
 const TAMANIO_MAXIMO_BYTES = TAMANIO_MAXIMO_MB * 1024 * 1024;
@@ -26,10 +22,45 @@ export default function CargaArchivos() {
 
   const [tipoDocumento, setTipoDocumento] = useState("");
   const [archivos, setArchivos] = useState([]);
+  const [documentos, setDocumentos] = useState([]);
   const [errores, setErrores] = useState([]);
   const [mensaje, setMensaje] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [cargandoDocumentos, setCargandoDocumentos] = useState(false);
 
   const solicitudActivaId = localStorage.getItem("solicitudActivaId");
+
+  useEffect(() => {
+    void fetchDocumentos();
+  }, [solicitudActivaId]);
+
+  async function fetchDocumentos() {
+    if (!solicitudActivaId) {
+      setDocumentos([]);
+      return;
+    }
+
+    setCargandoDocumentos(true);
+
+    try {
+      const res = await http(`/equivalencias/documentos/${solicitudActivaId}`, {
+        method: "GET",
+      });
+
+      if (res.status !== 200) {
+        throw new Error(
+          res.data?.error || res.data?.message || "No se pudieron cargar los documentos"
+        );
+      }
+
+      setDocumentos(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      setErrores([error?.message || "Error al cargar documentos"]);
+      setDocumentos([]);
+    } finally {
+      setCargandoDocumentos(false);
+    }
+  }
 
   function obtenerLabelTipoDocumento(valor) {
     const encontrado = TIPOS_DOCUMENTO.find((tipo) => tipo.value === valor);
@@ -57,7 +88,13 @@ export default function CargaArchivos() {
       (archivo) => archivo.tipoDocumento === tipoDocumento
     );
 
-    if (yaExisteTipo) {
+    const yaExisteTipoGuardado = documentos.some(
+      (archivo) =>
+        (archivo.tipoDocumentoLabel || archivo.tipodocumentolabel) ===
+        obtenerLabelTipoDocumento(tipoDocumento)
+    );
+
+    if (yaExisteTipo || yaExisteTipoGuardado) {
       setErrores(["Ya cargó un archivo para ese tipo de documento en esta solicitud."]);
       e.target.value = "";
       return;
@@ -86,10 +123,11 @@ export default function CargaArchivos() {
 
       archivosValidos.push({
         id: Date.now() + Math.random(),
-        solicitudId: Number(solicitudActivaId),
+        solicitudId: solicitudActivaId,
         nombre: archivo.name,
         tipo: archivo.type,
         tamanio: archivo.size,
+        file: archivo,
         tipoDocumento,
         tipoDocumentoLabel: obtenerLabelTipoDocumento(tipoDocumento),
       });
@@ -118,6 +156,10 @@ export default function CargaArchivos() {
   }
 
   function guardarArchivos() {
+    void guardarArchivosReales();
+  }
+
+  async function guardarArchivosReales() {
     if (!solicitudActivaId) {
       setErrores(["No hay una solicitud activa."]);
       setMensaje("");
@@ -130,44 +172,65 @@ export default function CargaArchivos() {
       return;
     }
 
-    const archivosGuardados =
-      JSON.parse(localStorage.getItem("archivosSolicitud")) || [];
-
-    const nuevosRegistros = archivos.map((archivo) => ({
-      ...archivo,
-      fechaCarga: new Date().toISOString(),
-      estado: "Cargado",
-    }));
-
-    const todosLosArchivos = [...archivosGuardados, ...nuevosRegistros];
-
-    localStorage.setItem(
-      "archivosSolicitud",
-      JSON.stringify(todosLosArchivos)
-    );
-
-    const solicitudes = JSON.parse(localStorage.getItem("solicitudes")) || [];
-    const solicitudesActualizadas = solicitudes.map((solicitud) => {
-      if (solicitud.id === Number(solicitudActivaId)) {
-        return {
-          ...solicitud,
-          cantidadArchivos: todosLosArchivos.filter(
-            (archivo) => archivo.solicitudId === solicitud.id
-          ).length,
-        };
-      }
-      return solicitud;
-    });
-
-    localStorage.setItem("solicitudes", JSON.stringify(solicitudesActualizadas));
-    localStorage.removeItem("solicitudActivaId");
-
-    setMensaje("Los archivos fueron cargados correctamente.");
+    setGuardando(true);
     setErrores([]);
-    setArchivos([]);
-    setTipoDocumento("");
+    setMensaje("");
 
-    navigate("/solicitudes");
+    try {
+      for (const archivo of archivos) {
+        const formData = new FormData();
+        formData.append("file", archivo.file);
+        formData.append("documentType", archivo.tipoDocumento);
+
+        const res = await http(`/equivalencias/${solicitudActivaId}/documentos`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (res.status !== 200 && res.status !== 201) {
+          throw new Error(
+            res.data?.error || res.data?.message || "No se pudo subir un documento"
+          );
+        }
+      }
+
+      const res = await http(`/equivalencias/documentos/${solicitudActivaId}`, {
+        method: "GET",
+      });
+
+      if (res.status !== 200) {
+        throw new Error(
+          res.data?.error || res.data?.message || "No se pudieron actualizar los documentos"
+        );
+      }
+
+      const documentosActualizados = Array.isArray(res.data) ? res.data : [];
+      setDocumentos(documentosActualizados);
+
+      const solicitudes = JSON.parse(localStorage.getItem("solicitudes")) || [];
+      const solicitudesActualizadas = solicitudes.map((solicitud) => {
+        if (String(solicitud.id) === solicitudActivaId) {
+          return {
+            ...solicitud,
+            cantidadArchivos: documentosActualizados.length,
+          };
+        }
+        return solicitud;
+      });
+
+      localStorage.setItem("solicitudes", JSON.stringify(solicitudesActualizadas));
+      localStorage.removeItem("solicitudActivaId");
+
+      setMensaje("Los archivos fueron cargados correctamente.");
+      setArchivos([]);
+      setTipoDocumento("");
+
+      navigate("/estudiante/solicitudes");
+    } catch (error) {
+      setErrores([error?.message || "Error al guardar archivos"]);
+    } finally {
+      setGuardando(false);
+    }
   }
 
   return (
@@ -225,7 +288,7 @@ export default function CargaArchivos() {
               </label>
               <input
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
+                accept=".pdf"
                 onChange={manejarSeleccionArchivos}
                 disabled={!solicitudActivaId}
                 className="block w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-brand-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
@@ -234,7 +297,7 @@ export default function CargaArchivos() {
           </div>
 
           <p className="text-sm text-slate-500">
-            Formatos permitidos: PDF, PNG, JPG, JPEG. Tamaño máximo: 5 MB por archivo.
+            Formato permitido: PDF. Tamaño máximo: 5 MB por archivo.
           </p>
 
           {errores.length > 0 && (
@@ -255,10 +318,12 @@ export default function CargaArchivos() {
 
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              Documentos cargados para esta solicitud
+              {archivos.length > 0
+                ? "Documentos listos para guardar"
+                : "Documentos cargados para esta solicitud"}
             </h2>
 
-            {archivos.length === 0 ? (
+            {archivos.length === 0 && documentos.length === 0 && !cargandoDocumentos ? (
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
                 No hay documentos cargados.
               </div>
@@ -279,16 +344,22 @@ export default function CargaArchivos() {
                       <th className="px-4 py-3 text-sm font-semibold text-slate-800">
                         Tamaño
                       </th>
-                      <th className="px-4 py-3 text-sm font-semibold text-slate-800">
-                        Acción
-                      </th>
+                      {archivos.length > 0 ? (
+                        <th className="px-4 py-3 text-sm font-semibold text-slate-800">
+                          Acción
+                        </th>
+                      ) : (
+                        <th className="px-4 py-3 text-sm font-semibold text-slate-800">
+                          Estado
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
-                    {archivos.map((archivo) => (
+                    {(archivos.length > 0 ? archivos : documentos).map((archivo) => (
                       <tr key={archivo.id} className="border-b border-slate-100">
                         <td className="px-4 py-3 text-sm text-slate-700">
-                          {archivo.tipoDocumentoLabel}
+                          {archivo.tipoDocumentoLabel || archivo.tipodocumentolabel}
                         </td>
                         <td className="px-4 py-3 text-sm text-slate-700">
                           {archivo.nombre}
@@ -300,13 +371,19 @@ export default function CargaArchivos() {
                           {formatearTamanio(archivo.tamanio)}
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <button
-                            type="button"
-                            onClick={() => eliminarArchivo(archivo.id)}
-                            className="rounded-xl border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
-                          >
-                            Eliminar
-                          </button>
+                          {archivos.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => eliminarArchivo(archivo.id)}
+                              className="rounded-xl border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                            >
+                              Eliminar
+                            </button>
+                          ) : (
+                            <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                              {archivo.estado}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -328,10 +405,10 @@ export default function CargaArchivos() {
             <button
               type="button"
               onClick={guardarArchivos}
-              disabled={!solicitudActivaId}
+              disabled={!solicitudActivaId || guardando}
               className="rounded-2xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Guardar archivos
+              {guardando ? "Guardando..." : "Guardar archivos"}
             </button>
           </div>
         </div>

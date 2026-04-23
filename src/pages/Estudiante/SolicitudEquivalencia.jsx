@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/auth/AuthContext.jsx";
 import { http } from "../../api/http.js";
 import { useErrorSnackbar } from "../../contexts/error/ErrorSnackbarProvider.jsx";
 
@@ -14,23 +13,25 @@ const CARRERAS = [
 
 export default function SolicitudEquivalencia() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { showError } = useErrorSnackbar();
+  const { showError, showSuccess } = useErrorSnackbar();
 
   const [form, setForm] = useState({
     nombre: "",
+    correo: "",
     carnet: "",
     carrera: "",
     cursoAprobado: "",
     codigoCursoAprobado: "",
     cursoEquivalencia: "",
     codigoCursoEquivalencia: "",
+    docente: "",
     observaciones: "",
   });
 
   const [errores, setErrores] = useState({});
   const [cursos, setCursos] = useState([]);
   const [loadingCursos, setLoadingCursos] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     void fetchCursos();
@@ -81,6 +82,12 @@ export default function SolicitudEquivalencia() {
       nuevosErrores.carnet = "El carnet solo debe contener números";
     }
 
+    if (!form.correo.trim()) {
+      nuevosErrores.correo = "El correo es obligatorio";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo.trim())) {
+      nuevosErrores.correo = "El correo no es válido";
+    }
+
     if (!form.carrera.trim()) {
       nuevosErrores.carrera = "La carrera es obligatoria";
     }
@@ -105,6 +112,10 @@ export default function SolicitudEquivalencia() {
       nuevosErrores.codigoCursoEquivalencia = "El código del curso a equivaler no es válido";
     }
 
+    if (!form.docente.trim()) {
+      nuevosErrores.docente = "El docente es obligatorio";
+    }
+
     if (form.observaciones.trim().length > 300) {
       nuevosErrores.observaciones = "Las observaciones no deben exceder 300 caracteres";
     }
@@ -112,26 +123,7 @@ export default function SolicitudEquivalencia() {
     return nuevosErrores;
   }
 
-  function obtenerCorreoEstudiante() {
-    if (typeof user?.email === "string" && user.email.trim()) {
-      return user.email.trim();
-    }
-
-    try {
-      const usuarioGuardado = JSON.parse(localStorage.getItem("user") || "null");
-
-      if (
-        typeof usuarioGuardado?.email === "string" &&
-        usuarioGuardado.email.trim()
-      ) {
-        return usuarioGuardado.email.trim();
-      }
-    } catch {}
-
-    return "";
-  }
-
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     const nuevosErrores = validar();
@@ -139,35 +131,88 @@ export default function SolicitudEquivalencia() {
 
     if (Object.keys(nuevosErrores).length > 0) return;
 
-    const nuevaSolicitud = {
-      id: Date.now(),
-      ...form,
-      correo: obtenerCorreoEstudiante(),
-      estado: "En revisión",
-      fechaSolicitud: new Date().toISOString(),
-      cantidadArchivos: 0,
-    };
+    setBusy(true);
 
-    const solicitudesGuardadas =
-      JSON.parse(localStorage.getItem("solicitudes")) || [];
+    try {
+      const payload = {
+        nombre: form.nombre.trim(),
+        correo: form.correo.trim(),
+        carnet: form.carnet.trim(),
+        carrera: form.carrera.trim(),
+        cursoAprobado: form.cursoAprobado.trim(),
+        codigoCursoAprobado: form.codigoCursoAprobado.trim(),
+        cursoEquivalencia: form.cursoEquivalencia.trim(),
+        codigoCursoEquivalencia: form.codigoCursoEquivalencia.trim(),
+        observaciones: form.observaciones.trim(),
+        docente: form.docente.trim(),
+      };
 
-    solicitudesGuardadas.push(nuevaSolicitud);
+      const res = await http("/equivalencias", {
+        method: "POST",
+        body: payload,
+      });
 
-    localStorage.setItem("solicitudes", JSON.stringify(solicitudesGuardadas));
-    localStorage.setItem("solicitudActivaId", String(nuevaSolicitud.id));
+      if (res.status !== 200 && res.status !== 201) {
+        throw new Error(
+          res.data?.error || res.data?.message || "No se pudo crear la solicitud"
+        );
+      }
 
-    setForm({
-      nombre: "",
-      carnet: "",
-      carrera: "",
-      cursoAprobado: "",
-      codigoCursoAprobado: "",
-      cursoEquivalencia: "",
-      codigoCursoEquivalencia: "",
-      observaciones: "",
-    });
+      const solicitudId = String(res.data?.solicitud?.id || "").trim();
 
-    navigate("/carga-archivos");
+      if (!solicitudId) {
+        throw new Error("El backend no devolvió el id de la solicitud");
+      }
+
+      const solicitudesGuardadas =
+        JSON.parse(localStorage.getItem("solicitudes")) || [];
+
+      const nuevaSolicitudTemporal = {
+        id: solicitudId,
+        nombre: form.nombre.trim(),
+        correo: form.correo.trim(),
+        carnet: form.carnet.trim(),
+        carrera: form.carrera.trim(),
+        cursoAprobado: form.cursoAprobado.trim(),
+        codigoCursoAprobado: form.codigoCursoAprobado.trim(),
+        cursoEquivalencia: form.cursoEquivalencia.trim(),
+        codigoCursoEquivalencia: form.codigoCursoEquivalencia.trim(),
+        docente: form.docente.trim(),
+        observaciones: form.observaciones.trim(),
+        estado: "En revisión",
+        fechaSolicitud: new Date().toISOString(),
+        cantidadArchivos: 0,
+      };
+
+      const solicitudesActualizadas = solicitudesGuardadas.filter(
+        (solicitud) => String(solicitud.id) !== solicitudId
+      );
+
+      solicitudesActualizadas.push(nuevaSolicitudTemporal);
+
+      localStorage.setItem("solicitudes", JSON.stringify(solicitudesActualizadas));
+      localStorage.setItem("solicitudActivaId", solicitudId);
+
+      setForm({
+        nombre: "",
+        correo: "",
+        carnet: "",
+        carrera: "",
+        cursoAprobado: "",
+        codigoCursoAprobado: "",
+        cursoEquivalencia: "",
+        codigoCursoEquivalencia: "",
+        docente: "",
+        observaciones: "",
+      });
+      setErrores({});
+      showSuccess("Solicitud creada correctamente");
+      navigate("/estudiante/carga-archivos");
+    } catch (error) {
+      showError(error?.message ?? "Error al crear la solicitud");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -226,6 +271,23 @@ export default function SolicitudEquivalencia() {
               />
               {errores.carnet && (
                 <p className="mt-2 text-sm text-red-600">{errores.carnet}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Correo
+              </label>
+              <input
+                type="email"
+                name="correo"
+                value={form.correo}
+                onChange={handleChange}
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                placeholder="correo@dominio.com"
+              />
+              {errores.correo && (
+                <p className="mt-2 text-sm text-red-600">{errores.correo}</p>
               )}
             </div>
 
@@ -334,6 +396,23 @@ export default function SolicitudEquivalencia() {
 
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Docente evaluador
+              </label>
+              <input
+                type="text"
+                name="docente"
+                value={form.docente}
+                onChange={handleChange}
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                placeholder="Ingrese el nombre del docente"
+              />
+              {errores.docente && (
+                <p className="mt-2 text-sm text-red-600">{errores.docente}</p>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Observaciones
               </label>
               <textarea
@@ -360,9 +439,10 @@ export default function SolicitudEquivalencia() {
 
               <button
                 type="submit"
+                disabled={busy}
                 className="rounded-2xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700"
               >
-                Continuar con archivos
+                {busy ? "Guardando..." : "Crear solicitud"}
               </button>
             </div>
           </form>

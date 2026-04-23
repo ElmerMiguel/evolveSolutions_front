@@ -185,12 +185,29 @@ import {
   setLayout,
   useLayoutController,
 } from "../contexts/layout/LayoutContext.jsx";
+import { http } from "../api/http.js";
+import { useErrorSnackbar } from "../contexts/error/ErrorSnackbarProvider.jsx";
+
+const ESTADOS_PENDIENTES = ["SUBMITTED", "UNDER_REVIEW"];
+
+function mapSolicitudFromApi(solicitud) {
+  return {
+    id: solicitud.id,
+    estado: solicitud.estado,
+    nombre: solicitud.nombre,
+    carnet: solicitud.carnet,
+    carrera: solicitud.carrera,
+    cursoEquivalencia: solicitud.cursoequivalencia,
+  };
+}
 
 export default function DashboardModerno() {
   const navigate = useNavigate();
   const { token, rol, user } = useAuth();
   const [, dispatch] = useLayoutController();
+  const { showError } = useErrorSnackbar();
   const [greeting, setGreeting] = useState("Bienvenido");
+  const [solicitudesSecretaria, setSolicitudesSecretaria] = useState([]);
 
   useEffect(() => {
     if (!token) {
@@ -204,7 +221,43 @@ export default function DashboardModerno() {
     else setGreeting("Buenas noches");
   }, [token, dispatch, navigate]);
 
+  useEffect(() => {
+    if (rol !== "SECRETARY" && rol !== "ADMIN") return;
+    void fetchSolicitudesSecretaria();
+  }, [rol]);
+
   const userName = user?.firstName || user?.username || "Usuario";
+
+  async function fetchSolicitudesSecretaria() {
+    try {
+      const res = await http("/equivalencias", { method: "GET" });
+
+      if (res.status !== 200) {
+        throw new Error(
+          res.data?.error || res.data?.message || "No se pudieron cargar las equivalencias"
+        );
+      }
+
+      const solicitudes = Array.isArray(res.data)
+        ? res.data.map(mapSolicitudFromApi)
+        : [];
+
+      setSolicitudesSecretaria(solicitudes);
+    } catch (error) {
+      showError(error?.message || "Error al cargar equivalencias");
+      setSolicitudesSecretaria([]);
+    }
+  }
+
+  const pendientesSecretaria = solicitudesSecretaria.filter((solicitud) =>
+    ESTADOS_PENDIENTES.includes(solicitud.estado)
+  );
+  const aprobadasSecretaria = solicitudesSecretaria.filter(
+    (solicitud) => solicitud.estado === "APPROVED"
+  );
+  const rechazadasSecretaria = solicitudesSecretaria.filter(
+    (solicitud) => solicitud.estado === "REJECTED"
+  );
 
   // -- Vistas por Rol --
   const renderStudentDashboard = () => (
@@ -425,7 +478,9 @@ export default function DashboardModerno() {
             <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
               Pendientes
             </p>
-            <h2 className="text-4xl font-black text-slate-800 mt-2">12</h2>
+            <h2 className="text-4xl font-black text-slate-800 mt-2">
+              {pendientesSecretaria.length}
+            </h2>
             <button
               onClick={() => navigate("/secretaria/cambio-estado")}
               className="flex items-center gap-2 mt-4 text-sm text-brand-600 font-medium cursor-pointer hover:underline"
@@ -448,21 +503,24 @@ export default function DashboardModerno() {
           </div>
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
             <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
-              Aprobadas (Mensual)
+              Aprobadas
             </p>
-            <h2 className="text-4xl font-black text-emerald-600 mt-2">45</h2>
+            <h2 className="text-4xl font-black text-emerald-600 mt-2">
+              {aprobadasSecretaria.length}
+            </h2>
             <div className="flex items-center gap-2 mt-4 text-xs font-semibold text-emerald-700 bg-emerald-50 w-max px-2 py-1 rounded-md pr-3">
-              <span className="text-emerald-500">▲</span> 12% vs mes anterior
+              Total aprobadas registradas
             </div>
           </div>
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
             <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
               Rechazadas
             </p>
-            <h2 className="text-4xl font-black text-rose-500 mt-2">8</h2>
+            <h2 className="text-4xl font-black text-rose-500 mt-2">
+              {rechazadasSecretaria.length}
+            </h2>
             <p className="text-xs text-slate-500 mt-4 leading-relaxed font-medium">
-              Mayoritariamente por programas incompletos o faltantes del
-              docente.
+              Total rechazadas registradas
             </p>
           </div>
         </div>
@@ -499,55 +557,55 @@ export default function DashboardModerno() {
                 <th className="px-4 py-3 font-semibold rounded-l-lg">
                   Expediente
                 </th>
-                <th className="px-4 py-3 font-semibold">CUI Estudiante</th>
-                <th className="px-4 py-3 font-semibold">Carrera Origen</th>
-                <th className="px-4 py-3 font-semibold">Fecha Envío</th>
+                <th className="px-4 py-3 font-semibold">Estudiante</th>
+                <th className="px-4 py-3 font-semibold">Carrera</th>
+                <th className="px-4 py-3 font-semibold">Curso</th>
                 <th className="px-4 py-3 font-semibold text-right rounded-r-lg">
                   Acción
                 </th>
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                <td className="px-4 py-4 font-bold text-slate-800">
-                  EQ-2026-0012
-                </td>
-                <td className="px-4 py-4">3014 55982 0901</td>
-                <td className="px-4 py-4">
-                  <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 text-xs font-semibold">
-                    T1 - Ing. Civil
-                  </span>
-                </td>
-                <td className="px-4 py-4">Hace 2 horas</td>
-                <td className="px-4 py-4 text-right">
-                  <button
-                    onClick={() => navigate("/secretaria/cambio-estado")}
-                    className="text-brand-600 font-bold hover:underline"
+              {pendientesSecretaria.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="5"
+                    className="px-4 py-8 text-center text-sm text-slate-500"
                   >
-                    Revisar »
-                  </button>
-                </td>
-              </tr>
-              <tr className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                <td className="px-4 py-4 font-bold text-slate-800">
-                  EQ-2026-0013
-                </td>
-                <td className="px-4 py-4">2998 12345 0901</td>
-                <td className="px-4 py-4">
-                  <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded border border-indigo-100 text-xs font-semibold">
-                    T2 - Ing. Sistemas
-                  </span>
-                </td>
-                <td className="px-4 py-4">Hace 5 horas</td>
-                <td className="px-4 py-4 text-right">
-                  <button
-                    onClick={() => navigate("/secretaria/cambio-estado")}
-                    className="text-brand-600 font-bold hover:underline"
+                    No hay equivalencias pendientes en este momento.
+                  </td>
+                </tr>
+              ) : (
+                pendientesSecretaria.map((solicitud, index) => (
+                  <tr
+                    key={solicitud.id}
+                    className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
                   >
-                    Revisar »
-                  </button>
-                </td>
-              </tr>
+                    <td className="px-4 py-4 font-bold text-slate-800">
+                      {String(solicitud.id).slice(0, 8).toUpperCase()}
+                    </td>
+                    <td className="px-4 py-4">
+                      {solicitud.nombre || solicitud.carnet}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 text-xs font-semibold">
+                        {solicitud.carrera}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      {solicitud.cursoEquivalencia || `Solicitud ${index + 1}`}
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <button
+                        onClick={() => navigate("/secretaria/cambio-estado")}
+                        className="text-brand-600 font-bold hover:underline"
+                      >
+                        Revisar »
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
