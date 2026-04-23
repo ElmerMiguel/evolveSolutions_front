@@ -1,15 +1,58 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { http } from "../../api/http.js";
+import { useErrorSnackbar } from "../../contexts/error/ErrorSnackbarProvider.jsx";
+
+const ESTADO_LABELS = {
+  SUBMITTED: "Recibida",
+  UNDER_REVIEW: "En revisión",
+  APPROVED: "Aprobada",
+  REJECTED: "Rechazada",
+};
+
+function mapSolicitudFromApi(solicitud) {
+  return {
+    id: solicitud.id,
+    nombre: solicitud.nombre,
+    carnet: solicitud.carnet,
+    carrera: solicitud.carrera,
+    cursoAprobado: solicitud.cursoaprobado,
+    codigoCursoAprobado: solicitud.codigocursoaprobado,
+    cursoEquivalencia: solicitud.cursoequivalencia,
+    codigoCursoEquivalencia: solicitud.codigocursoequivalencia,
+    cantidadArchivos: solicitud.cantidadarchivos,
+    estado: ESTADO_LABELS[solicitud.estado] || solicitud.estado,
+  };
+}
 
 export default function Solicitudes() {
   const [solicitudes, setSolicitudes] = useState([]);
+  const { showError } = useErrorSnackbar();
 
   useEffect(() => {
-    const data = localStorage.getItem("solicitudes");
-    if (data) {
-      setSolicitudes(JSON.parse(data));
-    }
+    void fetchSolicitudes();
   }, []);
+
+  async function fetchSolicitudes() {
+    try {
+      const res = await http("/equivalencias", { method: "GET" });
+
+      if (res.status !== 200) {
+        throw new Error(
+          res.data?.error || res.data?.message || "No se pudieron cargar las solicitudes"
+        );
+      }
+
+      const solicitudesMapeadas = Array.isArray(res.data)
+        ? res.data.map(mapSolicitudFromApi)
+        : [];
+
+      setSolicitudes(solicitudesMapeadas);
+    } catch (error) {
+      showError(error?.message || "Error al cargar solicitudes");
+      setSolicitudes([]);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-brand-100 p-6">
